@@ -43,8 +43,12 @@ function verifyToken(token) {
   }
 }
 
+function normalizeFingerprint(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
 function validFingerprint(value) {
-  return /^[a-f0-9]{64}$/i.test(String(value || ''));
+  return /^[a-f0-9]{64}$/.test(normalizeFingerprint(value));
 }
 
 function normalizeProject(project, apiFingerprint) {
@@ -66,10 +70,10 @@ function normalizeProject(project, apiFingerprint) {
 
 export default async (req) => {
   const url = new URL(req.url);
-  const apiFingerprint = String(url.searchParams.get('apiFingerprint') || '');
+  const apiFingerprint = normalizeFingerprint(url.searchParams.get('apiFingerprint'));
 
   if (!validFingerprint(apiFingerprint)) {
-    return json({ message: 'A valid apiFingerprint is required.' }, 400);
+    return json({ message: 'A valid 64-character SHA-256 apiFingerprint is required.' }, 400);
   }
 
   const store = getStore(STORE_NAME);
@@ -78,6 +82,15 @@ export default async (req) => {
   if (req.method === 'GET') {
     const entry = await store.getWithMetadata(key, { consistency: 'strong', type: 'json' });
     if (!entry) return json({ exists: false, project: null }, 404);
+
+    const storedFingerprint = normalizeFingerprint(entry.data?.apiFingerprint);
+    if (storedFingerprint !== apiFingerprint) {
+      return json({
+        message: 'Stored cloud translation fingerprint does not match the requested API.',
+        conflict: true
+      }, 409);
+    }
+
     return json({ exists: true, etag: entry.etag, project: entry.data });
   }
 
@@ -94,8 +107,13 @@ export default async (req) => {
       return json({ message: 'Invalid JSON body.' }, 400);
     }
 
-    if (String(body?.apiFingerprint || '') !== apiFingerprint) {
+    if (normalizeFingerprint(body?.apiFingerprint) !== apiFingerprint) {
       return json({ message: 'API fingerprint mismatch.' }, 409);
+    }
+
+    const incomingProjectFingerprint = normalizeFingerprint(body?.project?.apiFingerprint);
+    if (incomingProjectFingerprint && incomingProjectFingerprint !== apiFingerprint) {
+      return json({ message: 'Project API fingerprint mismatch.' }, 409);
     }
 
     const project = normalizeProject(body?.project, apiFingerprint);
