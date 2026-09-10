@@ -1,0 +1,15 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/auth"
+  to = "/.netlify/functions/auth"
+  status = 200
+
+[[redirects]]
+  from = "/api/translation"
+  to = "/.netlify/functions/translation"
+  status = 200

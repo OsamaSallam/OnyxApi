@@ -1,0 +1,1075 @@
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+<!DOCTYPE html>
+<!--
+  General API Doc - IMPORT-DRIVEN HTML TEMPLATE
+  ============================================================
+  This file is the UI template only. No API endpoints are embedded.
+  SAFE EDITING RULE:
+  - HTML/CSS: change freely for presentation and layout.
+  - Rendering functions: change only when intentionally changing UI.
+  - importDocs(event): keep as the data-ingestion boundary.
+  - The imported JSON becomes the runtime `api` object.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Miniplate / ERP Normal API Documentation Portal">
+<!-- Swagger-style GET/POST colors and centralized typography customization are defined in :root. -->
+<title>General API Doc — by R&D \ Osama Sallam</title>
+<style>
+/* ============================================================
+   CSS LAYER
+   Existing design tokens/components are preserved.
+   Put future visual additions in clearly labelled CSS sections.
+   ============================================================ */
+*{box-sizing:border-box}
+:root{
+  --bg:#eef2f7;--page-canvas:#BCF59D;--logo-start:#315efb;--logo-end:#6d83ff;--surface:#fff;--surface2:#f7f9fc;--surface3:#edf2f7;
+
+  --text:#172033;--muted:#68758a;--line:#dbe2ec;
+  --blue:#315efb;--blue2:#2448c8;--blueSoft:#e9efff;
+  --green:#16a36f;--greenSoft:#e6f7f0;
+  --red:#dc4c4c;--redSoft:#fdeaea;
+  --yellow:#b77908;--yellowSoft:#fff6d9;
+  --purple:#7048c8;--purpleSoft:#f0eaff;
+  --code:#111827;--codeText:#e8edf6;
+  --shadow:0 14px 45px rgba(28,42,68,.08);
+  --radius:14px;
+  /* =========================
+     CUSTOMIZATION / SWAGGER STYLE
+     Change the values below to adjust the API appearance.
+     ========================= */
+  --method-get:#61affe;
+  --method-get-soft:#eaf4ff;
+  --method-post:#49cc90;
+  --method-post-soft:#e9f9f1;
+  --method-put:#fca130;
+  --method-patch:#50e3c2;
+  --method-delete:#f93e3e;
+  --method-text:#fff;
+  --base-font:"Segoe UI",Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  --base-font-size:14px;
+  --method-font-size:12px;
+  --method-padding:7px 11px;
+  --path-font-size:18px;
+  --section-title-size:20px;
+  --table-head-size:11px;
+  --code-font-size:12px;
+  /* =========================
+     TYPOGRAPHY CUSTOMIZATION
+     ========================= */
+  --controller-size:16px;
+  --endpoint-title-size:26px;
+  --endpoint-description-size:16px;
+  --endpoint-description-line-height:1.7;
+  --endpoint-description-style:italic;
+  --endpoint-description-weight:400;
+}
+html[data-theme="dark"]{
+  --bg:#0a0f18;--surface:#111827;--surface2:#151f2e;--surface3:#1c2738;
+  --text:#eef3fb;--muted:#9aa8bc;--line:#2b394d;
+  --blue:#7390ff;--blue2:#9bb0ff;--blueSoft:#1b294e;
+  --green:#42d09f;--greenSoft:#12392f;
+  --red:#ff8080;--redSoft:#3b2024;
+  --yellow:#f0bd59;--yellowSoft:#3d3016;
+  --purple:#b296ff;--purpleSoft:#2b2147;
+  --code:#080c13;--codeText:#e7edf7;
+  --shadow:0 18px 55px rgba(0,0,0,.25);
+  --method-get-soft:#18324a;
+  --method-post-soft:#163a2b;
+}
+body{margin:0;background:var(--page-canvas);color:var(--text);font-family:var(--base-font);font-size:var(--base-font-size)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:var(--blue)}
+.app{display:grid;grid-template-columns:310px minmax(0,1fr);min-height:100vh}
+.sidebar{height:100vh;position:sticky;top:0;overflow:auto;background:var(--surface);border-right:1px solid var(--line);padding:18px 15px;z-index:20}
+.brand{display:flex;align-items:center;gap:11px;padding:3px 6px 18px}
+.logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--logo-start),var(--logo-end)#315efb,#6d83ff);color:#ffff;display:grid;place-items:center;font-size:21px;font-weight:900;box-shadow:0 8px 20px rgba(49,94,251,.25)}
+.brand-title{font-weight:850;font-size:17px}.brand-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.searchbox{position:relative;margin-bottom:13px}.searchbox input{width:100%;padding:11px 12px 11px 36px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--text);outline:none}.searchbox span{position:absolute;left:12px;top:9px;color:var(--muted)}
+.nav-title{font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:800;text-transform:uppercase;padding:11px 8px 6px}
+.nav-group{margin-bottom:8px}
+.nav-controller{
+    font-size:var(--controller-size);
+    font-weight:800;
+    padding:7px 9px;
+    color:var(--text);
+}
+.nav-item{width:100%;border:0;background:transparent;color:var(--muted);padding:8px 9px 8px 13px;border-radius:8px;text-align:left;display:flex;align-items:center;gap:8px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blueSoft);color:var(--blue);font-weight:750}
+.mini-method{font-size:9px;font-weight:900;border-radius:5px;padding:2px 5px;min-width:33px;text-align:center;background:var(--surface3);color:#fff}
+.mini-method.get{background:var(--method-get)}
+.mini-method.post{background:var(--method-post)}
+.mini-method.put{background:var(--method-put)}
+.mini-method.patch{background:var(--method-patch)}
+.mini-method.delete{background:var(--method-delete)}
+.nav-item.active .mini-method{color:#fff}
+.main{min-width:0}
+.topbar{height:70px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:15}
+.top-title{font-weight:800}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--text);padding:9px 12px;border-radius:9px;font-weight:700}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}.btn.danger:hover{filter:brightness(.94)}
+.content{max-width:1400px;margin:0 auto;padding:28px 30px 70px}
+.hero{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;padding:28px;margin-bottom:18px}
+.eyebrow{font-size:var(--controller-size);letter-spacing:.11em;text-transform:uppercase;color:var(--blue);font-weight:900}
+.hero h1{font-size:var(--endpoint-title-size);margin:5px 0 8px;line-height:1.3;font-weight:800}
+.desc{font-size:var(--base-font-size);line-height:1.6;color:var(--muted);max-width:950px}
+.hero .desc{font-size:var(--endpoint-description-size);line-height:var(--endpoint-description-line-height);font-style:var(--endpoint-description-style);font-weight:var(--endpoint-description-weight);color:var(--text)}
+.endpoint-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px;padding:6px 8px;border:1px solid transparent;border-radius:4px}
+.endpoint-line.method-row-get{background:var(--method-get-soft);border-color:var(--method-get)}
+.endpoint-line.method-row-post{background:var(--method-post-soft);border-color:var(--method-post)}
+.endpoint-line.method-row-put{background:color-mix(in srgb,var(--method-put) 12%,transparent);border-color:var(--method-put)}
+.endpoint-line.method-row-patch{background:color-mix(in srgb,var(--method-patch) 12%,transparent);border-color:var(--method-patch)}
+.endpoint-line.method-row-delete{background:color-mix(in srgb,var(--method-delete) 10%,transparent);border-color:var(--method-delete)}
+.method{font-weight:900;font-size:var(--method-font-size);color:var(--method-text);padding:var(--method-padding);border-radius:4px;min-width:80px;text-align:center;display:inline-block}
+.method.get{background:var(--method-get)}
+.method.post{background:var(--method-post)}
+.method.put{background:var(--method-put)}
+.method.patch{background:var(--method-patch)}
+.method.delete{background:var(--method-delete)}
+.path{font-family:Consolas,Monaco,monospace;font-size:var(--path-font-size);font-weight:750;word-break:break-all}
+.copy-small{border:1px solid var(--line);background:var(--surface2);color:var(--text);padding:6px 9px;border-radius:7px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.pill{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:5px 10px;font-size:12px}
+.flow{display:grid;grid-template-columns:1fr 35px 1fr 35px 1fr;gap:8px;align-items:center;margin-top:22px}
+.flow-node{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:13px;text-align:center;font-weight:800}
+.flow-node small{display:block;color:var(--muted);font-weight:500;margin-top:2px}.flow-arrow{color:var(--blue);font-size:23px;text-align:center}
+.section{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:15px;padding:22px;margin:18px 0}
+.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.section h2{margin:0;font-size:var(--section-title-size)}.section h3{margin:20px 0 10px;font-size:15px}
+.notice{border-left:4px solid var(--blue);background:var(--blueSoft);padding:13px 15px;border-radius:7px;color:var(--text)}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.info-card{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:14px}.info-card b{display:block;margin-bottom:5px}.info-card span{color:var(--muted)}
+.table-wrap{overflow:auto;border:2px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:1050px}
+th{background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;text-align:left;padding:12px 13px;white-space:nowrap;font-size:var(--table-head-size);letter-spacing:.04em;text-transform:uppercase}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--surface2)}
+.field{font-family:Consolas,Monaco,monospace;color:var(--blue);font-weight:800}.type{font-weight:750}.muted{color:var(--muted)}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+.badge.req{background:var(--redSoft);color:var(--red)}.badge.opt{background:var(--surface3);color:var(--muted)}
+.badge.yes{background:var(--greenSoft);color:var(--green)}.badge.no{background:var(--surface3);color:var(--muted)}
+.value-list{display:flex;gap:5px;flex-wrap:wrap}.value{padding:3px 7px;background:var(--purpleSoft);color:var(--purple);border-radius:6px;font-size:11px}
+.codebox{position:relative;background:var(--code);color:var(--codeText);border-radius:11px;padding:18px;overflow:auto;font:var(--code-font-size)/1.65 Consolas,Monaco,monospace;white-space:pre;min-height:55px}
+.codebox .copy-code{position:absolute;right:9px;top:9px;background:#1d2737;border:1px solid #3a4659;color:#e8edf6;border-radius:7px;padding:6px 9px}
+.tabs{display:flex;gap:5px;margin-bottom:10px}.tab{border:1px solid var(--line);background:var(--surface2);color:var(--muted);padding:7px 10px;border-radius:7px}.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.response-code{max-height:430px}
+.error-row{background:var(--redSoft)}.status-code{font-family:Consolas,monospace;font-weight:900;color:var(--red)}
+.editor-panel{display:none;margin-top:13px;padding:15px;border:2px dashed var(--line);border-radius:11px;background:var(--surface2)}
+.editor-panel.open{display:block}
+.editor-note{color:var(--muted);font-size:12px;margin-bottom:10px}
+.edit-table{min-width:1250px}.edit-table input,.edit-table select,.edit-table textarea{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:6px;padding:7px}
+.edit-table textarea{min-height:55px;resize:vertical}.check{width:auto!important;transform:scale(1.15)}
+.action-cell{white-space:nowrap}.icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:7px;padding:5px 8px}.icon-btn.delete{color:var(--red)}
+.editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.quick-card{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:13px}.quick-card .n{font-size:22px;font-weight:900;color:var(--blue)}.quick-card .l{color:var(--muted);font-size:11px}
+.footer{text-align:center;color:var(--muted);padding:25px 0}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--text);color:var(--bg);padding:11px 15px;border-radius:9px;box-shadow:var(--shadow);display:none;z-index:100}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}
+.modal-card{width:min(680px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.3)}.modal-card h2{margin:0 0 15px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.form-field label{display:block;font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;margin-bottom:5px}.form-field input,.form-field select,.form-field textarea{width:100%;padding:9px;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:8px}.form-field.full{grid-column:1/-1}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.hidden{display:none!important}
+.top-meta{display:flex;align-items:center;gap:0;margin-left:auto;margin-right:18px}.spec-badge{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:11px;font-weight:850;line-height:1}.spec-badge .spec-version{background:var(--surface3);color:var(--text);padding:7px 9px}.spec-badge .spec-oas{background:var(--greenSoft);color:var(--green);padding:7px 9px;border-left:1px solid var(--line)}.overview-link{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:inherit;padding:0;text-align:left;cursor:pointer}.overview-link:hover .overview-request-model{text-decoration:underline}.overview-param-count{display:inline-flex;align-items:center;justify-content:center;padding:4px 9px;border:1px solid var(--blue);border-radius:999px;background:var(--blueSoft);color:var(--blue);font-size:10px;font-weight:900;line-height:1;white-space:nowrap;box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--blueSoft);transition:transform .15s ease,box-shadow .15s ease}.overview-params-link:hover .overview-param-count{transform:translateY(-1px);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--blueSoft)}.overview-request-model{display:inline;color:var(--blue);font-family:Consolas,Monaco,monospace;font-weight:800;background:linear-gradient(transparent 58%,#fff176 58%,#fff176 88%,transparent 88%);padding:0 1px}.edit-lock-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:7px}.password-error{display:none;color:var(--red);font-size:12px;font-weight:700;margin-top:8px}.password-error.show{display:block}.cloud-status{font-size:11px;color:var(--muted);font-weight:700;margin-right:4px;white-space:nowrap}.cloud-status.ok{color:var(--green)}.cloud-status.err{color:var(--red)}.password-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+@media(max-width:1050px){.app{grid-template-columns:250px 1fr}.info-grid,.quick{grid-template-columns:1fr 1fr}.content{padding:20px}}
+@media(max-width:760px){.app{display:block}.sidebar{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}.topbar{position:relative;padding:0 14px}.top-actions .btn:not(.primary){display:none}.content{padding:14px}.flow{grid-template-columns:1fr}.flow-arrow{transform:rotate(90deg)}.info-grid,.quick,.form-grid{grid-template-columns:1fr}}
+.request-structure{margin:14px 0 18px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+.request-structure-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:11px}
+.structure-tree{font-family:Consolas,Monaco,monospace;font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap}
+.structure-tree .tree-model{font-weight:900;color:var(--blue)}
+.structure-tree .tree-array{font-weight:900}
+.structure-tree .tree-link{color:var(--blue);font-weight:800}
+.dto-note{margin:0 0 10px;padding-left:2px}
+.dto-relation{font-size:15px;font-weight:900;color:var(--blue);font-family:Consolas,Monaco,monospace;line-height:1.45;margin:0 0 6px;padding-left:2px}
+/* ======================= END CSS LAYER ===================== */
+/* Published HTML: keep the delivered page read-only and hide editor actions. */
+html[data-published="true"] .admin-control{display:none !important;}
+</style>
+</head>
+<body>
+<!-- =========================================================
+     PAGE SHELL
+     Static structure. Dynamic API documentation is injected into
+     #content after an OpenAPI/Swagger JSON document is imported.
+     ========================================================= -->
+<div class="app">
+<!-- SIDEBAR: navigation generated from imported API paths. -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">H</div>
+    <div><div class="brand-title">General API Docs</div><div class="brand-sub">by R&D \ Osama Sallam</div></div>
+  </div>
+  <div class="searchbox"><span>⌕</span><input id="search" placeholder="Search endpoints, fields..."></div>
+  <div class="nav-title">Controllers & Endpoints</div>
+  <div id="nav"></div>
+  <div class="nav-title">Documentation</div>
+  <button class="nav-item" onclick="showOverview()"><span>▦</span> API Overview</button>
+  <button class="nav-item" onclick="showModels()"><span>◇</span> Data Models</button>
+  <button class="nav-item" onclick="showWorkspace()"><span>👥</span> Translation Workspace</button>
+</aside>
+<!-- MAIN: toolbar/actions + documentation content. -->
+<main class="main">
+<header class="topbar">
+  <div class="top-title" id="topTitle">API Documentation</div>
+  <div class="top-meta" aria-label="API specification"><div class="spec-badge"><span class="spec-version" id="specVersionBadge">v1</span><span class="spec-oas" id="specOasBadge">OAS 3.0</span></div></div>
+  <div class="top-actions">
+    <button class="btn" title="Toggle light / dark theme" aria-label="Toggle theme" onclick="toggleTheme()">◐</button>
+    <button class="btn admin-control" title="Export the raw OpenAPI contract" onclick="exportDocs()">⇩ OpenAPI</button>
+    <button class="btn admin-control" title="Export documentation metadata / Arabic translations" onclick="exportMetadata()">⇩ M.D</button>
+    <button class="btn admin-control" title="Import an OpenAPI / Swagger JSON file" onclick="if(requireEditMode())document.getElementById('importFile').click()">⇧ Import</button>
+    <button class="btn admin-control" title="Import documentation metadata / Arabic translations" onclick="if(requireEditMode())document.getElementById('metadataFile').click()">⇧ M.D</button>
+    <button class="btn danger admin-control" title="Clear the currently loaded API" onclick="clearImportedDocs()">Del</button>
+    <button class="btn admin-control" title="Open translation workspace and progress dashboard" aria-label="Translation workspace" onclick="showWorkspace()">👥</button>
+    <button class="btn primary admin-control" title="Unlock and edit documentation" onclick="toggleEditMode()">✎ <span id="editLabel">Edit Doc</span></button>
+    <span id="cloudStatus" class="cloud-status admin-control">☁ Local</span><button class="btn admin-control" title="Load or save the current translation with Netlify Blobs" onclick="syncCloudTranslation()">☁ Sync</button><button class="btn primary admin-control" title="Publish a self-contained HTML documentation file" onclick="publishHtml()">⇧ Publish</button>
+    <input id="importFile" class="hidden" type="file" accept=".json,application/json" onchange="importDocs(event)">
+    <input id="metadataFile" class="hidden" type="file" accept=".json,application/json" onchange="importMetadata(event)">
+  </div>
+</header>
+<!-- DYNAMIC CONTENT HOST
+     showOverview(), showModels(), and renderEndpoint() render here. -->
+<div class="content" id="content"></div>
+<div class="toast" id="toast"></div>
+</main>
+</div>
+<div class="modal" id="addParamModal">
+  <div class="modal-card">
+    <h2>＋ Add API Field</h2>
+    <div class="form-grid">
+      <div class="form-field"><label>Field Name</label><input id="newName" placeholder="Example: VoucherType"></div>
+      <div class="form-field"><label>Location</label><select id="newIn"><option>query</option><option>header</option><option>path</option></select></div>
+      <div class="form-field"><label>Data Type</label><select id="newType"><option>string</option><option>integer</option><option>number</option><option>boolean</option></select></div>
+      <div class="form-field"><label>Format</label><input id="newFormat" placeholder="int32 / int64 / date-time"></div>
+      <div class="form-field"><label>Required</label><select id="newRequired"><option value="false">No</option><option value="true">Yes</option></select></div>
+      <div class="form-field"><label>Max Length</label><input id="newMax" type="number" placeholder="Not specified"></div>
+      <div class="form-field full"><label>Description</label><textarea id="newDescription" placeholder="Explain what this field means and how frontend should use it."></textarea></div>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="createParam()">Add Field</button></div>
+  </div>
+</div>
+<div class="modal" id="editPasswordModal"><div class="modal-card" style="width:min(460px,100%)"><h2>🔐 Edit Documentation</h2><div class="muted">Enter the administrator password to enable editing of documentation tables.</div><div class="form-field" style="margin-top:14px"><label>Password</label><input id="editPasswordInput" type="password" autocomplete="current-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')verifyEditPassword()"><div class="password-error" id="passwordError">Incorrect password. Editing remains locked.</div><div class="edit-lock-note">Editing is verified by the Netlify Function. The password is kept in Netlify Environment Variables and is not stored in this page.</div></div><div class="password-actions"><button class="btn" onclick="closeEditPassword()">Cancel</button><button class="btn primary" onclick="verifyEditPassword()">Unlock Editing</button></div></div></div>
+<!--
+  OPENAPI DATA PLACEHOLDER
+  ============================================================
+  Intentionally empty. Do not paste endpoint data here.
+  Real OpenAPI / Swagger JSON is loaded only through Import.
+-->
+<script type="application/json" id="openapi-data">{}</script>
+<script type="application/json" id="documentation-data">{"version":3,"activeProjectId":"","projects":{}}</script>
+<script>
+"use strict";
+/* ============================================================
+   JAVASCRIPT ARCHITECTURE
+   ------------------------------------------------------------
+   DATA  -> `api` holds the raw OpenAPI contract.
+   DOCS  -> `docs` holds human-maintained documentation metadata.
+   VIEW  -> renderNav / renderEndpoint / showOverview / showModels.
+   EDIT  -> documentation-only edits, protected by the edit gate.
+   IMPORTANT: Import is intentionally separated from presentation.
+   You can redesign the page without changing importDocs(event).
+   ============================================================ */
+/* ============================================================
+   DATA SEPARATION
+   ------------------------------------------------------------
+   api  = raw OpenAPI contract. Treat as READ-ONLY.
+   docs = human-maintained documentation overlay.
+   The two objects are persisted independently.
+   ============================================================ */
+const ORIGINAL = JSON.parse(document.getElementById("openapi-data").textContent || "{}");
+const EMBEDDED_DOCS = JSON.parse(document.getElementById("documentation-data").textContent || "{}");
+let api = structuredClone(ORIGINAL);
+let docs = normalizeDocs(EMBEDDED_DOCS);
+let currentPath = "";
+let currentMethod = "";
+let editMode = false;
+let cloudState = { etag:"", loaded:false, saving:false };
+let cloudSaveTimer = null;
+const API_STORAGE_KEY = "miniplate_openapi";
+const DOCS_STORAGE_KEY = "miniplate_api_docs_metadata";
+const $ = id => document.getElementById(id);
+function esc(v){return String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800);}
+function getTranslatorName(){return String(localStorage.getItem("onyx_translator_name")||sessionStorage.getItem("onyx_editor_name")||"Translator").trim()||"Translator";}
+function setTranslatorName(){const current=getTranslatorName();const value=prompt("Translator name",current);if(value!==null&&value.trim()){localStorage.setItem("onyx_translator_name",value.trim());toast("Translator name saved");showWorkspace();}}
+function emptyProject(){return {version:3,apiFingerprint:"",apiTitle:"",apiVersion:"",translations:{parameters:{},fields:{},responses:{}},workflow:{parameters:{},fields:{},responses:{}},team:{lastUpdatedAt:"",lastUpdatedBy:""}};}
+function normalizeProject(value){
+  const p=value&&typeof value==="object"?value:emptyProject();
+  p.version=3;p.apiFingerprint=String(p.apiFingerprint||"");p.apiTitle=String(p.apiTitle||"");p.apiVersion=String(p.apiVersion||"");
+  p.translations=p.translations&&typeof p.translations==="object"?p.translations:{};
+  p.workflow=p.workflow&&typeof p.workflow==="object"?p.workflow:{};
+  p.team=p.team&&typeof p.team==="object"?p.team:{};
+  for(const b of ["parameters","fields","responses"]){
+    p.translations[b]=p.translations[b]&&typeof p.translations[b]==="object"?p.translations[b]:{};
+    p.workflow[b]=p.workflow[b]&&typeof p.workflow[b]==="object"?p.workflow[b]:{};
+  }
+  return p;
+}
+function normalizeDocs(value){
+  const d=value&&typeof value==="object"?structuredClone(value):{};
+  if(d.version===1 && d.translations){
+    return {version:3,activeProjectId:"",projects:{__legacy__:normalizeProject({translations:d.translations})}};
+  }
+  // Backward compatibility for published v3 files created by older builds.
+  // Older Publish emitted a flat project; convert it to the canonical shape.
+  if(Number(d.version)===3 && d.translations && !d.projects){
+    const id=String(d.apiFingerprint||"");
+    const project=normalizeProject({
+      apiFingerprint:id,
+      apiTitle:d.api?.title||"",
+      apiVersion:d.api?.version||"",
+      translations:d.translations,
+      workflow:d.workflow,
+      team:d.team
+    });
+    return {version:3,activeProjectId:id,projects:id?{[id]:project}:{__legacy__:project}};
+  }
+  d.version=3;
+  d.projects=d.projects&&typeof d.projects==="object"?d.projects:{};
+  for(const [id,project] of Object.entries(d.projects))d.projects[id]=normalizeProject(project);
+  d.activeProjectId=String(d.activeProjectId||"");
+  return d;
+}
+function saveApi(){localStorage.setItem(API_STORAGE_KEY,JSON.stringify(api));}
+function saveDocs(){
+  docs=normalizeDocs(docs);
+  localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));
+  if(editMode && !document.documentElement.dataset.published) scheduleCloudSave();
+}
+function loadSavedApi(){try{const x=localStorage.getItem(API_STORAGE_KEY)||localStorage.getItem("miniplate_api_docs");return x?JSON.parse(x):null}catch(e){return null}}
+function loadSavedDocs(){try{const x=localStorage.getItem(DOCS_STORAGE_KEY);return x?normalizeDocs(JSON.parse(x)):normalizeDocs({});}catch(e){return normalizeDocs({});}}
+async function sha256Text(value){const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");}
+async function apiFingerprint(source=api){return sha256Text(JSON.stringify(source||{}));}
+function currentProject(){
+  docs=normalizeDocs(docs);
+  if(docs.activeProjectId && docs.projects[docs.activeProjectId])return docs.projects[docs.activeProjectId];
+  if(docs.projects.__legacy__)return docs.projects.__legacy__;
+  docs.projects[docs.activeProjectId||"__unbound__"]??=normalizeProject({apiFingerprint:docs.activeProjectId||""});
+  return docs.projects[docs.activeProjectId||"__unbound__"];
+}
+async function activateDocsForApi({migrateLegacy=true}={}){
+  if(!api||!api.paths||!Object.keys(api.paths).length)return;
+  const id=await apiFingerprint(api);docs=normalizeDocs(docs);
+  if(!docs.projects[id]){
+    const legacy=docs.projects.__legacy__;
+    const hasLegacy=legacy && Object.values(legacy.translations||{}).some(x=>x&&Object.keys(x).length);
+    if(migrateLegacy&&hasLegacy){legacy.apiFingerprint=id;legacy.apiTitle=api.info?.title||"";legacy.apiVersion=api.info?.version||"";docs.projects[id]=legacy;delete docs.projects.__legacy__;}
+    else docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:api.info?.title||"",apiVersion:api.info?.version||""});
+  }
+  docs.projects[id].apiFingerprint=id;docs.projects[id].apiTitle=api.info?.title||docs.projects[id].apiTitle||"";docs.projects[id].apiVersion=api.info?.version||docs.projects[id].apiVersion||"";docs.activeProjectId=id;saveDocs();
+}
+function parameterKey(method,path,param){return `${String(method||"").toUpperCase()}:${path}:${param?.in||"unknown"}:${param?.name||""}`;}
+function fieldKey(schemaName,fieldName){return `${schemaName}:${fieldName}`;}
+function responseKey(schemaName,fieldName){return `${schemaName}:${fieldName}`;}
+function getDocText(bucket,key){return String(currentProject().translations?.[bucket]?.[key]??"");}
+function setDocText(bucket,key,value){
+  const p=currentProject();p.translations[bucket]??={};p.workflow[bucket]??={};
+  const clean=String(value??"").trim();
+  if(clean){p.translations[bucket][key]=clean;p.workflow[bucket][key]={status:"translated",reviewStatus:"pending",translator:getTranslatorName(),updatedAt:new Date().toISOString()};}
+  else{delete p.translations[bucket][key];delete p.workflow[bucket][key];}
+  p.team.lastUpdatedAt=new Date().toISOString();p.team.lastUpdatedBy=getTranslatorName();saveDocs();
+}
+function getParameterDescription(path,method,param){return getDocText("parameters",parameterKey(method,path,param));}
+function getFieldDescription(schemaName,fieldName,p){return getDocText("fields",fieldKey(schemaName,fieldName));}
+function getResponseDescription(schemaName,fieldName,p){return getDocText("responses",responseKey(schemaName,fieldName));}
+function saveSaved(){saveApi();}
+function currentOp(){return (api.paths?.[currentPath]||{})[currentMethod] || {};}
+function schemaByRef(ref){return ref ? (api.components?.schemas?.[ref.split("/").pop()]||{}) : {};}
+function resolveSchema(s){return s?.$ref ? schemaByRef(s.$ref) : (s||{});}
+function schemaFields(schema){
+  const s=resolveSchema(schema), required=new Set(s.required||[]);
+  return Object.entries(s.properties||{}).map(([name,p])=>({name,p,required:required.has(name)}));
+}
+function schemaNameFromRef(ref){
+  if(!ref) return "";
+  const prefix="#/components/schemas/";
+  if(ref.startsWith(prefix)) return ref.slice(prefix.length);
+  return ref.split("/").pop()||"";
+}
+function requestBodySchemaInfo(op){
+  const content=op?.requestBody?.content||{};
+  const media=content["application/json"]||content["text/json"]||content["application/*+json"]||Object.values(content)[0];
+  const original=media?.schema||null;
+  if(!original) return {schema:null,isArray:false,dtoName:"",contentType:""};
+  let schema=original,isArray=false;
+  if(schema.type==="array"){
+    isArray=true;
+    schema=schema.items||{};
+  }
+  const dtoName=schemaNameFromRef(schema.$ref)||"";
+  return {schema,isArray,dtoName,contentType:Object.keys(content).find(k=>content[k]===media)||""};
+}
+function collectRequestDtos(schema, out=[], seen=new Set(), depth=0){
+  if(!schema || depth>12) return out;
+  if(schema.$ref){
+    const name=schemaNameFromRef(schema.$ref);
+    if(!name || seen.has(name)) return out;
+    seen.add(name);
+    const resolved=resolveSchema(schema);
+    out.push({name,schema:resolved});
+    Object.values(resolved.properties||{}).forEach(p=>collectRequestDtos(p,out,seen,depth+1));
+    (resolved.allOf||[]).forEach(p=>collectRequestDtos(p,out,seen,depth+1));
+    return out;
+  }
+  if(schema.type==="array"){
+    collectRequestDtos(schema.items,out,seen,depth+1);
+    return out;
+  }
+  Object.values(schema.properties||{}).forEach(p=>collectRequestDtos(p,out,seen,depth+1));
+  (schema.allOf||[]).forEach(p=>collectRequestDtos(p,out,seen,depth+1));
+  return out;
+}
+function requestBodyDtos(op){
+  const info=requestBodySchemaInfo(op);
+  if(!info.schema) return {info,dtos:[]};
+  const dtos=collectRequestDtos(info.schema);
+  if(!dtos.length && (info.schema.properties||{})){
+    dtos.push({name:info.dtoName||"Request Body",schema:resolveSchema(info.schema)});
+  }
+  return {info,dtos};
+}
+function endpointAnchorId(path,method){
+  return `endpoint-${method}-${path.replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-+|-+$/g,"")}`;
+}
+function requestDtoAnchorId(path,method,dtoName){
+  return `${endpointAnchorId(path,method)}-dto-${dtoName.replace(/[^a-zA-Z0-9]+/g,"-").replace(/^-+|-+$/g,"")}`;
+}
+function parametersAnchorId(path,method){return `${endpointAnchorId(path,method)}-parameters`;}
+function parameterSummary(e){const params=e.op?.parameters||[];return {count:params.length,names:params.map(p=>p.name).filter(Boolean)};}
+function requestModelSummary(e){
+  const request=requestBodyDtos(e.op);
+  if(!request.info.schema) return {label:"—",hasBody:false,dtos:[]};
+  if(!request.dtos.length) return {label:"Request Body",hasBody:true,dtos:[]};
+  const labels=request.dtos.map((dto,i)=>`${dto.name}${i===0&&request.info.isArray?"[]":""}`);
+  return {label:labels.join(" · "),hasBody:true,dtos:request.dtos};
+}
+function requestStructureTree(op){
+  const info=requestBodySchemaInfo(op);
+  if(!info.schema) return "";
+  const rootName=info.dtoName || "Request Body";
+  const rootLabel=`${rootName}${info.isArray?"[]":""}`;
+  const lines=[rootLabel];
+  const root=resolveSchema(info.schema);
+  const childEntries=[];
+  Object.entries(root.properties||{}).forEach(([prop,p])=>{
+    const resolved=resolveSchema(p);
+    if(resolved.type!=="array" || !resolved.items?.$ref) return;
+    const childName=schemaNameFromRef(resolved.items.$ref);
+    if(!childName) return;
+    childEntries.push({prop,childName});
+  });
+  childEntries.forEach((c,i)=>{
+    const last=i===childEntries.length-1;
+    lines.push(`${last?"└──":"├──"} ${c.prop}[]`);
+    lines.push(`${last?"    ":"│   "}└── ${c.childName}`);
+  });
+  return {rootLabel,lines:lines.join("\n"),hasChildren:childEntries.length>0};
+}
+function openEndpointFromOverview(path,method,targetId=""){
+  selectEndpoint(path,method);
+  if(targetId) setTimeout(()=>{const el=$(targetId);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},50);
+}
+function requestDtoRows(dto){
+  const fields=schemaFields(dto.schema);
+  return fields.map(f=>{const arabic=getFieldDescription(dto.name,f.name,f.p);return `<tr>
+      <td><span class="field">${esc(f.name)}</span></td><td><span class="type">${esc(typeName(f.p))}</span></td><td>${esc(formatOf(f.p))}</td>
+      <td>${f.p.nullable?'<span class="badge yes">Yes</span>':'<span class="badge no">No</span>'}</td><td>${f.required?'<span class="badge req">Required</span>':'<span class="badge opt">Optional</span>'}</td>
+      <td>${f.p.maxLength ?? "Not specified"}</td><td>${f.p.minimum ?? "—"}</td><td>${f.p.maximum ?? "—"}</td>
+      <td>${esc(f.p.description||"")}</td><td>${arabic?esc(arabic):'<span class="muted">Not translated</span>'}</td>
+    </tr>`;}).join("");
+}
+function typeName(s){
+  s=resolveSchema(s);
+  if(s.type==="integer") return "Integer";
+  if(s.type==="number") return "Decimal";
+  if(s.type==="boolean") return "Boolean";
+  if(s.type==="array") return "Array";
+  if(s.type==="string" && s.format==="date-time") return "DateTime";
+  if(s.type==="string") return "String";
+  return "Object";
+}
+function formatOf(s){return resolveSchema(s).format || "—";}
+function valuesOf(s){
+  const x=resolveSchema(s);
+  if(x.enum) return x.enum;
+  return [];
+}
+function defaultOf(s){return resolveSchema(s).default ?? "—";}
+function methodBadge(m){return `<span class="method ${esc(m)}">${esc(m.toUpperCase())}</span>`;}
+function allEndpoints(){
+  const out=[];
+  for(const [path,item] of Object.entries(api.paths||{})){
+    for(const method of ["get","post","put","patch","delete"]){
+      if(item[method]) out.push({path,method,op:item[method]});
+    }
+  }
+  return out;
+}
+function controllerFor(e){return e.op.tags?.[0] || e.path.split("/")[2] || "Other";}
+function renderNav(filter=""){
+  const groups={};
+  allEndpoints().forEach(e=>(groups[controllerFor(e)]??=[]).push(e));
+  let html="";
+  for(const [controller,items] of Object.entries(groups)){
+    const vis=items.filter(e=>(e.path+" "+e.method+" "+(e.op.summary||"")).toLowerCase().includes(filter.toLowerCase()));
+    if(!vis.length) continue;
+    html+=`<div class="nav-group"><div class="nav-controller">▾ ${esc(controller)}</div>`;
+    vis.forEach(e=>{
+      const active=e.path===currentPath && e.method===currentMethod;
+      html+=`<button class="nav-item ${active?"active":""}" onclick="selectEndpoint('${esc(e.path).replaceAll("'","&#39;")}','${e.method}')"><span class="mini-method ${e.method}">${e.method.toUpperCase()}</span><span>${esc(e.path.split("/").filter(Boolean).pop()||e.path)}</span></button>`;
+    });
+    html+="</div>";
+  }
+  $("nav").innerHTML=html || `<div class="muted" style="padding:10px">No matching endpoints.</div>`;
+}
+function selectEndpoint(path,method){currentPath=path;currentMethod=method;renderNav($("search").value);renderEndpoint();}
+function buildExampleUrl(){
+  const op=currentOp(), params=op.parameters||[];
+  const qs=[];
+  params.filter(p=>p.in==="query").forEach(p=>{
+    let v=p.example ?? p.schema?.example ?? p.schema?.default;
+    if(v===undefined){
+      if(p.schema?.enum?.length) v=p.schema.enum[0];
+      else if(p.name==="LangNo") v=2;
+      else if(p.name==="Page") v=1;
+      else if(p.name==="PageSize") v=20;
+      else if(p.schema?.format==="date-time") v="2026-08-31T21:12:28.807Z";
+      else if(p.schema?.type==="integer") v=1;
+      else v="string";
+    }
+    qs.push(encodeURIComponent(p.name)+"="+encodeURIComponent(v));
+  });
+  return currentPath+(qs.length?"?"+qs.join("&"):"");
+}
+function sample(s,depth=0){
+  if(depth>6)return null;
+  s=resolveSchema(s);
+  if(s.example!==undefined)return s.example;
+  if(s.type==="array")return [sample(s.items,depth+1)];
+  if(s.type==="object"||s.properties)return Object.fromEntries(Object.entries(s.properties||{}).map(([k,v])=>[k,sample(v,depth+1)]));
+  if(s.format==="date-time")return "2026-08-31T21:12:28.807Z";
+  if(s.type==="integer"||s.type==="number")return 0;
+  if(s.type==="boolean")return false;
+  return "string";
+}
+function responseSchema(){
+  const r=currentOp().responses?.["200"];
+  if(!r) return {};
+  const media=r.content?.["application/json"] || r.content?.["text/json"] || r.content?.["text/plain"];
+  return media?.schema || {};
+}
+function responseObjectSchema(){
+  let s=responseSchema();
+  if(s.type==="array")s=s.items||{};
+  return resolveSchema(s);
+}
+/* ENDPOINT VIEW: generated from the current imported `api` object. */
+function renderEndpoint(){
+  const op=currentOp(), controller=controllerFor({path:currentPath,op});
+  $("topTitle").textContent=`${api.info?.title||"API"} · ${controller}`;
+  const params=op.parameters||[];
+  const request=requestBodyDtos(op);
+  const rs=responseObjectSchema();
+  const fields=schemaFields(rs);
+  const r200=op.responses?.["200"]||{};
+  const errorCodes=Object.entries(op.responses||{}).filter(([c])=>c!=="200");
+  const authText=(api.security?.length || api.components?.securitySchemes) ? "Bearer JWT" : "Defined by API";
+  const values=(s)=>valuesOf(s).map(v=>`<span class="value">${esc(v)}</span>`).join("")||"—";
+  const paramRows=params.map((p,i)=>{
+    const arabic=getParameterDescription(currentPath,currentMethod,p);
+    return `
+    <tr>
+      <td><span class="field">${esc(p.name)}</span></td>
+      <td>${esc(p.in||"query")}</td>
+      <td><span class="type">${esc(typeName(p.schema))}</span></td>
+      <td>${esc(formatOf(p.schema))}</td>
+      <td>${p.required?'<span class="badge req">Required</span>':'<span class="badge opt">Optional</span>'}</td>
+      <td>${p.schema?.maxLength ?? "Not specified"}</td>
+      <td>${p.schema?.minimum ?? "—"}</td>
+      <td>${p.schema?.maximum ?? "—"}</td>
+      <td>${values(p.schema)}</td>
+      <td>${esc(p.schema?.default ?? "—")}</td>
+      <td>${esc(p.description||"")}</td>
+      <td>${arabic?esc(arabic):'<span class="muted">Not translated</span>'}</td>
+    </tr>`;
+  }).join("");
+  const responseSchemaName=schemaNameFromRef(responseSchema()?.$ref)||schemaNameFromRef(currentOp().responses?.["200"]?.content?.["application/json"]?.schema?.$ref)||"";
+  const respRows=fields.map(f=>{
+    const arabic=getResponseDescription(responseSchemaName,f.name,f.p);
+    return `
+    <tr>
+      <td><span class="field">${esc(f.name)}</span></td>
+      <td><span class="type">${esc(typeName(f.p))}</span></td>
+      <td>${esc(formatOf(f.p))}</td>
+      <td>${f.required?'<span class="badge req">Required</span>':'<span class="badge opt">Optional</span>'}</td>
+      <td>${f.p.nullable?'<span class="badge yes">Yes</span>':'<span class="badge no">No</span>'}</td>
+      <td>${f.p.maxLength ?? "Not specified"}</td>
+      <td>${esc(f.p.default ?? "—")}</td>
+      <td>${esc(f.p.description||"")}</td>
+      <td>${arabic?esc(arabic):'<span class="muted">Not translated</span>'}</td>
+    </tr>`;
+  }).join("");
+  const requestDtoSections=request.dtos.map((dto,idx)=>{
+    const rows=requestDtoRows(dto);
+    const isTop=idx===0;
+    const dtoId=requestDtoAnchorId(currentPath,currentMethod,dto.name);
+    const parentText=isTop
+      ? "Top-level request model accepted by this endpoint."
+      : `Nested request DTO fields sent inside ${esc(request.dtos[0]?.name||"the master DTO")}.details[].`;
+    const detailRelation=!isTop && request.dtos[0]?.name
+      ? `<div class="dto-relation">↳ ${esc(request.dtos[0].name)}.details[] → ${esc(dto.name)}</div>`
+      : "";
+    return `
+    <div id="${dtoId}" class="section-head" style="margin-top:${isTop?"0":"22px"}">
+      <div>
+        ${isTop
+          ? `<h3>📦 DTO: ${esc(dto.name)}${request.info.isArray?"[]":""}</h3>`
+          : detailRelation}
+        <div class="muted dto-note">${dto.schema.description ? esc(dto.schema.description) : parentText}${idx===0&&request.info.contentType?` · Content-Type: ${esc(request.info.contentType)}`:""}</div>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Field Name</th><th>Data Type</th><th>Format</th><th>Nullable</th><th>Required</th><th>Max Length</th><th>Min</th><th>Max</th><th>OpenAPI Description</th><th>Arabic Description</th>
+    </tr></thead><tbody>${rows||'<tr><td colspan="9">No properties were resolved for this DTO.</td></tr>'}</tbody></table></div>`;
+  }).join("");
+  const requestEditors=request.dtos.map((dto,idx)=>`<div class="editor-panel" id="requestEditor-${idx}">
+      <div class="editor-note">Edit only Arabic documentation for <b>${esc(dto.name)}</b>. The OpenAPI schema remains read-only.</div>
+      <div class="table-wrap"><table class="edit-table"><thead><tr><th>Field</th><th>Type</th><th>OpenAPI Description</th><th>Arabic Description</th><th>Action</th></tr></thead><tbody>${requestFieldEditorRows(dto)}</tbody></table></div>
+      <div class="editor-actions"><button class="btn primary" onclick="saveRequestFieldEditor(${idx})">Save Arabic</button></div>
+    </div>`).join("");
+  const requestEditorButtons=request.dtos.map((dto,idx)=>`<button class="btn" onclick="toggleEditor('requestEditor-${idx}')">✎ ${esc(dto.name)}</button>`).join("");
+  const structure=requestStructureTree(op);
+  const structureHtml=structure?`<div class="request-structure"><div class="request-structure-title">Request Structure</div><div class="structure-tree">${esc(structure.lines)}</div></div>`:"";
+  const endpointId=endpointAnchorId(currentPath,currentMethod);
+  const requestBodySection=request.dtos.length?`
+  <section class="section">
+    <div class="section-head">
+      <div><h2>📦 Request Body</h2><div class="muted">DTO(s) resolved directly from the OpenAPI requestBody schema. Nested DTOs are shown separately so frontend developers can see the complete payload structure.</div></div>
+    </div>
+    <div class="notice"><b>Request model:</b> ${esc(request.dtos[0].name)}${request.info.isArray?"[]":""}${request.dtos.length>1?` · ${request.dtos.length} DTOs resolved`:""}</div>
+    ${structureHtml}
+    ${requestDtoSections}
+    <div class="editor-actions" style="margin-top:14px">${requestEditorButtons}</div>
+    ${requestEditors}
+  </section>`:"";
+  const responseExample=JSON.stringify(sample(responseSchema()),null,2);
+  $("content").innerHTML=`
+  <section id="${endpointId}" class="hero">
+    <div class="eyebrow">${esc(controller)} Controller</div>
+    <h1>${esc(op.summary || currentPath)}</h1>
+    <div class="endpoint-line method-row-${esc(currentMethod)}">${methodBadge(currentMethod)}<span class="path">${esc(currentPath)}</span><button class="copy-small" onclick="copyText(${JSON.stringify(buildExampleUrl())})">Copy URL</button></div>
+    <div class="desc">${esc(op.description || "This endpoint has no description as a <remarks> under a summary explanation for more information.")}</div>
+    <div class="meta">
+      <span class="pill">🔐 Authentication: ${esc(authText)}</span>
+      <span class="pill">🏷 Controller: ${esc(controller)}</span>
+      <span class="pill">📥 Parameters: ${params.length}</span>
+      <span class="pill">📦 Request DTOs: ${request.dtos.length}</span>
+      <span class="pill">📤 Response: ${esc(r200.description||"200 OK")}</span>
+    </div>
+    <div class="flow">
+      <div class="flow-node">🖥 Frontend<small>Build query / body</small></div><div class="flow-arrow">→</div>
+      <div class="flow-node">⚙ ${esc(controller)} Controller<small>${currentMethod.toUpperCase()} endpoint</small></div><div class="flow-arrow">→</div>
+      <div class="flow-node">📦 JSON Response<small>Map data into UI</small></div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="section-head"><div><h2>💡 How This Endpoint Works</h2><div class="muted">Normal explanation before the technical details.</div></div></div>
+    <div class="notice"><b>Frontend workflow:</b> authenticate first, call this endpoint with only the filters you need, read the returned JSON, then use the pagination information to build the grid/list navigation.</div>
+    <div class="info-grid">
+      <div class="info-card"><b>When should I use it?</b><span>${esc(op.summary||"Use it when the frontend needs data from this endpoint.")}</span></div>
+      <div class="info-card"><b>Authentication</b><span>Send <code>Authorization: Bearer &lt;token&gt;</code>. Authentication belongs to the API, not this documentation page.</span></div>
+      <div class="info-card"><b>Important</b><span>Do not invent field names. Use the exact API names shown below.</span></div>
+    </div>
+  </section>
+  ${params.length?`
+  <section id="${parametersAnchorId(currentPath,currentMethod)}" class="section">
+    <div class="section-head">
+      <div><h2>🔎 Parameters</h2><div class="muted">Query, path, and header parameters defined by the endpoint. This table is independent from the request-body DTO fields.</div></div>
+      <button class="btn primary" onclick="toggleEditor('paramEditor')">✎ Edit / Add Rows</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Field Name</th><th>Location</th><th>Data Type</th><th>Format</th><th>Required</th><th>Max Length</th><th>Min</th><th>Max</th><th>Allowed Values</th><th>Default</th><th>OpenAPI Description</th><th>Arabic Description</th>
+    </tr></thead><tbody>${paramRows}</tbody></table></div>
+    <div class="editor-panel" id="paramEditor">
+      <div class="editor-note">Documentation edits are stored separately from the raw OpenAPI contract. The contract is read-only; this editor changes only the human documentation overlay.</div>
+      <div class="table-wrap"><table class="edit-table"><thead><tr>
+        <th>Name</th><th>Location</th><th>Type</th><th>Format</th><th>Required</th><th>Max Length</th><th>Min</th><th>Max</th><th>Description</th><th>Action</th>
+      </tr></thead><tbody>${parameterEditorRows(params)}</tbody></table></div>
+      <div class="editor-actions"><button class="btn primary" onclick="saveParameterEditor()">Save Arabic Documentation</button></div>
+    </div>
+  </section>`:""}
+  ${requestBodySection}
+  <section class="section">
+    <div class="section-head"><div><h2>🔗 Request Example</h2><div class="muted">Copy-ready example. Authentication header is intentionally shown separately.</div></div></div>
+    <div class="tabs"><button class="tab active">GET URL</button><button class="tab" onclick="copyText('Authorization: Bearer &lt;token&gt;')">Auth Header</button></div>
+    <div class="codebox" id="requestCode">${esc(buildExampleUrl())}<button class="copy-code" onclick="copyElement('requestCode')">Copy</button></div>
+    <h3>JavaScript / Fetch</h3>
+    <div class="codebox" id="fetchCode">${esc(fetchExample())}<button class="copy-code" onclick="copyElement('fetchCode')">Copy</button></div>
+  </section>
+  <section class="section">
+    <div class="section-head"><div><h2>📤 Response · ${esc(r200.description||"200 OK")}</h2><div class="muted">The example below is generated from the OpenAPI response schema.</div></div></div>
+    <div class="codebox response-code" id="responseCode">${esc(responseExample)}<button class="copy-code" onclick="copyElement('responseCode')">Copy JSON</button></div>
+  </section>
+  <section class="section">
+    <div class="section-head">
+      <div><h2>🧩 Response Fields</h2><div class="muted">Metadata for every field the frontend receives.</div></div>
+      <button class="btn primary" onclick="toggleEditor('responseEditor')">✎ Edit / Add Rows</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Field Name</th><th>Data Type</th><th>Format</th><th>Required</th><th>Nullable</th><th>Max Length</th><th>Default</th><th>OpenAPI Description</th><th>Arabic Description</th>
+    </tr></thead><tbody>${respRows||'<tr><td colspan="9">No response fields were resolved.</td></tr>'}</tbody></table></div>
+    <div class="editor-panel" id="responseEditor">
+      <div class="editor-note">Edit only the Arabic documentation overlay. The raw OpenAPI response schema remains read-only.</div>
+      <div class="table-wrap"><table class="edit-table"><thead><tr><th>Field</th><th>Type</th><th>Format</th><th>Required</th><th>Nullable</th><th>Max Length</th><th>Description</th><th>Action</th></tr></thead>
+      <tbody>${responseEditorRows(rs)}</tbody></table></div>
+      <div class="editor-actions"><button class="btn primary" onclick="saveResponseEditor()">Save Arabic Documentation</button></div>
+    </div>
+  </section>
+  <section class="section">
+    <div class="section-head"><div><h2>⚠️ Error Responses</h2><div class="muted">Tell the frontend what to expect when the request is not successful.</div></div></div>
+    ${errorCodes.length?`<div class="table-wrap"><table><thead><tr><th>HTTP Code</th><th>Description</th><th>Frontend Recommendation</th></tr></thead><tbody>
+      ${errorCodes.map(([c,r])=>`<tr class="error-row"><td><span class="status-code">${esc(c)}</span></td><td><b>${esc(r.description||"Error")}</b></td><td>Handle the API error consistently and show the backend message only when appropriate for the UI.</td></tr>`).join("")}
+    </tbody></table></div>`:'<div class="notice">No non-success responses are documented yet. Admin can add them in the production editor.</div>'}
+  </section>
+  <section class="section">
+    <div class="section-head"><div><h2>🧑‍💻 Frontend Developer Notes</h2><div class="muted">Business-level guidance that Swagger normally cannot provide.</div></div></div>
+    <div class="info-grid">
+      <div class="info-card"><b>Dates</b><span>Keep API date-time values in ISO 8601 form when sending them to the backend. Format them for display separately.</span></div>
+      <div class="info-card"><b>Pagination</b><span>If the response contains <code>page</code>, <code>pageSize</code>, <code>totalCount</code>, and <code>totalPages</code>, use them to build the pagination UI.</span></div>
+      <div class="info-card"><b>Null values</b><span>Nullable response fields can be <code>null</code>. Avoid assuming every optional value is always populated.</span></div>
+    </div>
+  </section>`;
+}
+function requestFieldEditorRows(dto){return schemaFields(dto.schema).map((f,i)=>{const arabic=getFieldDescription(dto.name,f.name,f.p);return `<tr data-i="${i}"><td><span class="field">${esc(f.name)}</span></td><td>${esc(typeName(f.p))}</td><td>${esc(f.p.description||"")}</td><td><textarea data-k="arabic" dir="rtl" placeholder="اكتب الوصف العربي...">${esc(arabic)}</textarea></td><td class="action-cell"><button class="icon-btn" title="Clear translation" onclick="clearFieldTranslation(${JSON.stringify(dto.name)},${JSON.stringify(f.name)})">↺</button></td></tr>`;}).join("");}
+function saveRequestFieldEditor(index){if(!requireEditMode())return;const request=requestBodyDtos(currentOp());const dto=request.dtos[index];if(!dto)return;const fields=schemaFields(dto.schema);[...document.querySelectorAll(`#requestEditor-${index} tbody tr`)].forEach((r,i)=>{const f=fields[i],g=k=>r.querySelector(`[data-k="${k}"]`);if(f&&g("arabic"))setDocText("fields",fieldKey(dto.name,f.name),g("arabic").value);});toast("Arabic request documentation saved");renderEndpoint();}
+function clearFieldTranslation(schemaName,fieldName){if(!requireEditMode())return;setDocText("fields",fieldKey(schemaName,fieldName),"");renderEndpoint();}
+function parameterEditorRows(params){
+  return params.map((p,i)=>{
+    const key=parameterKey(currentMethod,currentPath,p);
+    const arabic=getParameterDescription(currentPath,currentMethod,p);
+    return `<tr data-i="${i}" data-doc-key="${esc(key)}">
+      <td><span class="field">${esc(p.name)}</span></td>
+      <td>${esc(p.in||"query")}</td>
+      <td>${esc(typeName(p.schema))}</td>
+      <td>${esc(formatOf(p.schema))}</td>
+      <td>${p.required?"Yes":"No"}</td>
+      <td>${esc(p.schema?.maxLength ?? "—")}</td>
+      <td>${esc(p.schema?.minimum ?? "—")}</td>
+      <td>${esc(p.schema?.maximum ?? "—")}</td>
+      <td><textarea data-k="arabic" dir="rtl" placeholder="اكتب الوصف العربي...">${esc(arabic)}</textarea></td>
+      <td class="action-cell"><button class="icon-btn" onclick="clearParameterTranslation(${i})">↺</button></td>
+    </tr>`;
+  }).join("");
+}
+function responseEditorRows(schema){
+  const schemaName=schemaNameFromRef(responseSchema()?.$ref)||schemaNameFromRef(currentOp().responses?.["200"]?.content?.["application/json"]?.schema?.$ref)||"";
+  return schemaFields(schema).map((f,i)=>{
+    const arabic=getResponseDescription(schemaName,f.name,f.p);
+    return `<tr data-r="${i}" data-doc-key="${esc(responseKey(schemaName,f.name))}">
+      <td><span class="field">${esc(f.name)}</span></td>
+      <td>${esc(typeName(f.p))}</td>
+      <td>${esc(formatOf(f.p))}</td>
+      <td>${f.required?"Yes":"No"}</td>
+      <td>${f.p.nullable?"Yes":"No"}</td>
+      <td>${esc(f.p.maxLength ?? "—")}</td>
+      <td><textarea data-k="arabic" dir="rtl" placeholder="اكتب الوصف العربي...">${esc(arabic)}</textarea></td>
+      <td class="action-cell"><button class="icon-btn" onclick="clearResponseTranslation(${i})">↺</button></td>
+    </tr>`;
+  }).join("");
+}
+function toggleEditor(id){if(!requireEditMode())return;$(id).classList.toggle("open");}
+function saveParameterEditor(){
+  if(!requireEditMode())return;
+  const params=currentOp().parameters||[];
+  [...document.querySelectorAll("#paramEditor tbody tr")].forEach((r,i)=>{
+    const p=params[i], g=k=>r.querySelector(`[data-k="${k}"]`);
+    if(p&&g("arabic"))setDocText("parameters",parameterKey(currentMethod,currentPath,p),g("arabic").value);
+  });
+  toast("Arabic parameter documentation saved");renderEndpoint();
+}
+function clearParameterTranslation(i){
+  if(!requireEditMode())return;
+  const p=currentOp().parameters?.[i];if(!p)return;
+  setDocText("parameters",parameterKey(currentMethod,currentPath,p),"");renderEndpoint();
+}
+function openParamModal(){toast("The API contract is read-only. Parameters must come from OpenAPI.");}
+function closeModal(){$("addParamModal").classList.remove("open");}
+function createParam(){toast("The API contract is read-only. Import an updated OpenAPI document instead.");}
+function saveResponseEditor(){
+  if(!requireEditMode())return;
+  const schemaName=schemaNameFromRef(responseSchema()?.$ref)||schemaNameFromRef(currentOp().responses?.["200"]?.content?.["application/json"]?.schema?.$ref)||"";
+  const fields=schemaFields(responseObjectSchema());
+  [...document.querySelectorAll("#responseEditor tbody tr")].forEach((r,i)=>{
+    const f=fields[i],g=k=>r.querySelector(`[data-k="${k}"]`);
+    if(f&&g("arabic"))setDocText("responses",responseKey(schemaName,f.name),g("arabic").value);
+  });
+  toast("Arabic response documentation saved");renderEndpoint();
+}
+function clearResponseTranslation(i){
+  if(!requireEditMode())return;
+  const schemaName=schemaNameFromRef(responseSchema()?.$ref)||schemaNameFromRef(currentOp().responses?.["200"]?.content?.["application/json"]?.schema?.$ref)||"";
+  const f=schemaFields(responseObjectSchema())[i];if(!f)return;
+  setDocText("responses",responseKey(schemaName,f.name),"");renderEndpoint();
+}
+function fetchExample(){
+  const url=buildExampleUrl();
+  return `const response = await fetch("${url}", {
+  method: "${currentMethod.toUpperCase()}",
+  headers: {
+    "Authorization": "Bearer <token>",
+    "Accept": "application/json"
+  }
+});
+const data = await response.json();`;
+}
+function copyText(text){navigator.clipboard?.writeText(text).then(()=>toast("Copied to clipboard")).catch(()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();toast("Copied to clipboard")})}
+function copyElement(id){copyText($(id).innerText.replace(/^Copy(?: JSON)?\\s*/,""))}
+function updateSpecBadge(){const version=api.info?.version||"v1";$("specVersionBadge").textContent=version;const raw=String(api.openapi||"");const oas=raw?raw.replace(/^(\d+\.\d+)(?:\.\d+)?$/,"$1"):"3.0";$("specOasBadge").textContent=`OAS ${oas}`;}
+function updateEditUi(){$("editLabel").textContent=editMode?"Editing":"Edit Doc";}
+/* ============================================================
+   EDIT ACCESS GATE
+   Client-side convenience protection for this standalone file.
+   It is NOT server-side security.
+   ============================================================ */
+function openEditPassword(){$("editPasswordModal").classList.add("open");$("passwordError").classList.remove("show");$("editPasswordInput").value="";setTimeout(()=>$('editPasswordInput').focus(),30);}
+function closeEditPassword(){$("editPasswordModal").classList.remove("open");}
+async function verifyEditPassword(){
+  const value=$("editPasswordInput").value.trim();
+  if(!value)return;
+  try{
+    const res=await fetch("/api/auth",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:value})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.token)throw new Error(data.message||"Incorrect password");
+    sessionStorage.setItem("onyx_editor_token",data.token);
+    sessionStorage.setItem("onyx_editor_name",data.name||"Person 1");
+    localStorage.setItem("onyx_translator_name",data.name||"Person 1");
+    editMode=true;sessionStorage.setItem("onyx_edit_unlocked","1");
+    updateEditUi();closeEditPassword();updateCloudStatus("Editor: "+getTranslatorName(),"ok");toast("Editing unlocked for "+getTranslatorName());
+    await syncCloudTranslation({preferCloud:true});
+  }catch(err){$("passwordError").textContent=err.message||"Incorrect password. Editing remains locked.";$("passwordError").classList.add("show");$("editPasswordInput").select();}
+}
+function toggleEditMode(){if(editMode){editMode=false;sessionStorage.removeItem("onyx_edit_unlocked");sessionStorage.removeItem("onyx_editor_token");sessionStorage.removeItem("onyx_editor_name");updateEditUi();updateCloudStatus("☁ Local"," ");toast("Admin editing mode disabled");return;}openEditPassword();}
+function requireEditMode(){if(editMode)return true;toast("Editing is locked. Unlock Edit Documentation first.");openEditPassword();return false;}
+function updateCloudStatus(text,state=""){const el=$("cloudStatus");if(!el)return;el.textContent=text;el.classList.remove("ok","err");if(state)el.classList.add(state);}
+function editorToken(){return sessionStorage.getItem("onyx_editor_token")||"";}
+function currentProjectIdForCloud(){return String(docs.activeProjectId||currentProject()?.apiFingerprint||"");}
+async function cloudRequest(url,options={}){const headers={...(options.headers||{})};const token=editorToken();if(token)headers.Authorization="Bearer "+token;return fetch(url,{...options,headers});}
+async function loadCloudTranslation({preferCloud=true}={}){
+  if(!api?.paths||!Object.keys(api.paths).length)return false;
+  const id=await apiFingerprint(api);
+  const res=await cloudRequest("/api/translation?apiFingerprint="+encodeURIComponent(id));
+  if(res.status===404){updateCloudStatus("☁ Not initialized");return false;}
+  if(!res.ok)throw new Error("Cloud load failed ("+res.status+")");
+  const data=await res.json();
+  if(!data.project)return false;
+  if(preferCloud){
+    docs=normalizeDocs(docs);docs.projects[id]=normalizeProject(data.project);docs.activeProjectId=id;localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));
+    renderNav();showOverview();
+  }
+  cloudState={etag:data.etag||"",loaded:true,saving:false};
+  updateCloudStatus("☁ Cloud v"+(data.project.cloudVersion||1),"ok");
+  return true;
+}
+async function saveCloudTranslation(){
+  if(!editMode||!editorToken()||document.documentElement.dataset.published==="true")return;
+  const id=currentProjectIdForCloud();if(!id)return;
+  const project=structuredClone(currentProject());project.apiFingerprint=id;project.cloudVersion=Number(project.cloudVersion||0)+1;project.team=project.team||{};project.team.lastUpdatedAt=new Date().toISOString();project.team.lastUpdatedBy=getTranslatorName();
+  cloudState.saving=true;updateCloudStatus("☁ Saving…");
+  try{
+    const body=JSON.stringify({apiFingerprint:id,project,etag:cloudState.etag||""});
+    const res=await cloudRequest("/api/translation",{method:"PUT",headers:{"Content-Type":"application/json"},body});
+    const data=await res.json().catch(()=>({}));
+    if(res.status===409){cloudState.saving=false;updateCloudStatus("☁ Conflict","err");toast("Cloud changed. Reload Cloud before saving again.");return false;}
+    if(res.status===401){editMode=false;sessionStorage.removeItem("onyx_edit_unlocked");sessionStorage.removeItem("onyx_editor_token");updateEditUi();throw new Error("Editor session expired. Unlock editing again.");}
+    if(!res.ok)throw new Error(data.message||"Cloud save failed");
+    const p=currentProject();p.cloudVersion=project.cloudVersion;p.team=project.team;cloudState={etag:data.etag||cloudState.etag,loaded:true,saving:false};localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));updateCloudStatus("☁ Saved v"+project.cloudVersion,"ok");return true;
+  }catch(err){cloudState.saving=false;updateCloudStatus("☁ Save failed","err");toast(err.message||"Cloud save failed");return false;}
+}
+function scheduleCloudSave(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>saveCloudTranslation(),900);}
+async function syncCloudTranslation({preferCloud=true}={}){
+  if(!api?.paths||!Object.keys(api.paths).length){toast("Load an OpenAPI document first.");return;}
+  try{
+    const found=await loadCloudTranslation({preferCloud});
+    if(!found && editMode){
+      if(!cloudState.etag) await saveCloudTranslation();
+    }else if(found){toast(preferCloud?"Cloud translation loaded":"Cloud checked");}
+  }catch(err){updateCloudStatus("☁ Error","err");toast(err.message||"Cloud sync failed");}
+}
+function toggleTheme(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==="dark"?"":"dark";localStorage.setItem("miniplate_theme",document.documentElement.dataset.theme||"light")}
+function downloadJson(filename,data){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function collectTranslationItems(){
+  const items=[];
+  for(const e of allEndpoints()){
+    for(const p of e.op.parameters||[])items.push({bucket:"parameters",key:parameterKey(e.method,e.path,p),label:p.name,kind:"Parameter",location:`${e.method.toUpperCase()} ${e.path}`,description:p.description||"",path:e.path,method:e.method});
+    const req=requestBodyDtos(e.op);for(const dto of req.dtos)for(const f of schemaFields(dto.schema))items.push({bucket:"fields",key:fieldKey(dto.name,f.name),label:f.name,kind:"Request Field",location:`${e.method.toUpperCase()} ${e.path} · ${dto.name}`,description:f.p.description||"",path:e.path,method:e.method});
+    const rs=responseObjectSchemaFor(e.op), rn=firstResponseSchemaName(e.op);for(const f of schemaFields(rs))items.push({bucket:"responses",key:responseKey(rn,f.name),label:f.name,kind:"Response Field",location:`${e.method.toUpperCase()} ${e.path} · ${rn||"Response"}`,description:f.p.description||"",path:e.path,method:e.method});
+  }
+  const seen=new Set();return items.filter(x=>{const k=x.bucket+"|"+x.key;if(seen.has(k))return false;seen.add(k);return true;});
+}
+function responseObjectSchemaFor(op){const r=op?.responses?.["200"];if(!r)return {};const media=r.content?.["application/json"]||r.content?.["text/json"]||r.content?.["text/plain"]||Object.values(r.content||{})[0];let s=media?.schema||{};if(s.type==="array")s=s.items||{};return resolveSchema(s);}
+function firstResponseSchemaName(op){const r=op?.responses?.["200"],media=r?.content?.["application/json"]||r?.content?.["text/json"]||Object.values(r?.content||{})[0],s=media?.schema||{};return schemaNameFromRef(s.$ref)||schemaNameFromRef(s.items?.$ref)||"";}
+function translationStats(){const items=collectTranslationItems(),translated=items.filter(x=>getDocText(x.bucket,x.key)).length;return {total:items.length,translated,missing:items.length-translated,percent:items.length?Math.round(translated/items.length*100):100};}
+function showWorkspace(){
+  const st=translationStats();$("topTitle").textContent="Translation Workspace";
+  const project=currentProject();
+  $("content").innerHTML=`<section class="hero"><div class="eyebrow">Team Translation</div><h1>Translation Workspace</h1><div class="desc">Focused workspace for the translator. M.D is the portable translation source; no database is required for the current deployment.</div><div class="meta"><span class="pill">👤 ${esc(getTranslatorName())}</span><span class="pill">API: ${esc(api.info?.title||"No API")}</span><span class="pill">${st.percent}% translated</span></div></section>
+  <section class="section"><div class="section-head"><div><h2>📊 Progress</h2><div class="muted">Only items that exist in the current OpenAPI contract are counted.</div></div><button class="btn" onclick="setTranslatorName()">👤 Translator</button></div><div class="quick"><div class="quick-card"><div class="n">${st.total}</div><div class="l">Total</div></div><div class="quick-card"><div class="n">${st.translated}</div><div class="l">Translated</div></div><div class="quick-card"><div class="n">${st.missing}</div><div class="l">Missing</div></div><div class="quick-card"><div class="n">${st.percent}%</div><div class="l">Complete</div></div></div></section>
+  <section class="section"><div class="section-head"><div><h2>📝 Translation Queue</h2><div class="muted">Search and open any missing or translated item without navigating the API manually.</div></div></div><div class="form-grid"><div class="form-field"><label>Search</label><input id="workspaceSearch" placeholder="Field, DTO, endpoint..."></div><div class="form-field"><label>Status</label><select id="workspaceStatus"><option value="all">All</option><option value="missing">Missing</option><option value="translated">Translated</option></select></div></div><div id="workspaceQueue" style="margin-top:14px"></div></section>
+  <section class="section"><div class="section-head"><div><h2>📦 Team Data</h2><div class="muted">M.D is the portable translation file and the source of Arabic documentation for this lightweight deployment.</div></div><div class="editor-actions"><button class="btn" onclick="exportMetadata()">⇩ M.D</button><button class="btn" onclick="setTranslatorName()">👤 Name</button></div></div><div class="notice">Last local update: ${esc(project.team?.lastUpdatedAt||"—")} · By: ${esc(project.team?.lastUpdatedBy||"—")}</div></section>`;
+  const renderQueue=()=>{const q=$("workspaceQueue"),search=($("workspaceSearch").value||"").toLowerCase(),status=$("workspaceStatus").value;const items=collectTranslationItems().filter(x=>(status==="all"||(status==="translated"&&!!getDocText(x.bucket,x.key))||(status==="missing"&&!getDocText(x.bucket,x.key)))&&((x.label+" "+x.location+" "+x.description).toLowerCase().includes(search)));q.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Status</th><th>Type</th><th>Field</th><th>Location</th><th>Arabic</th><th>Action</th></tr></thead><tbody>${items.map(x=>{const translated=!!getDocText(x.bucket,x.key);return `<tr><td>${translated?'<span class="badge yes">Translated</span>':'<span class="badge no">Missing</span>'}</td><td>${esc(x.kind)}</td><td class="field">${esc(x.label)}</td><td>${esc(x.location)}</td><td dir="rtl">${translated?esc(getDocText(x.bucket,x.key)):'—'}</td><td><button class="btn" onclick='openTranslationItem(${JSON.stringify(x.path)},${JSON.stringify(x.method)},${JSON.stringify(x.bucket)},${JSON.stringify(x.key)})'>Open</button></td></tr>`;}).join("")||'<tr><td colspan="6">No translation items match the filter.</td></tr>'}</tbody></table></div>`;};$("workspaceSearch").addEventListener("input",renderQueue);$("workspaceStatus").addEventListener("change",renderQueue);renderQueue();}
+function openTranslationItem(path,method,bucket,key){selectEndpoint(path,method);setTimeout(()=>{if(bucket==="parameters"){$(parametersAnchorId(path,method))?.scrollIntoView({behavior:"smooth",block:"start"});toggleEditor("paramEditor");}else{$("content")?.querySelectorAll(".editor-panel").forEach(x=>x.classList.remove("open"));const text=document.querySelector(`textarea`);if(text)text.focus();}},80);}
+function exportDocs(){downloadJson("openapi.json",api);toast("Raw OpenAPI contract exported");}
+function exportMetadata(){const project=currentProject();downloadJson("api-metadata.json",{format:"onyx-api-metadata",version:3,apiFingerprint:docs.activeProjectId||"",api:{title:project.apiTitle||api.info?.title||"",version:project.apiVersion||api.info?.version||""},translations:project.translations,workflow:project.workflow,team:project.team});toast("M.D exported");}
+function importMetadata(e){
+  const file=e.target.files[0];if(!file)return;const reader=new FileReader();
+  reader.onload=async()=>{try{const incoming=JSON.parse(reader.result);if(incoming.format!=="onyx-api-metadata"||![2,3].includes(Number(incoming.version)))throw new Error("Unsupported metadata file. Export a new api-metadata.json from this version.");const id=String(incoming.apiFingerprint||"");if(!id)throw new Error("Metadata API fingerprint is missing.");docs=normalizeDocs(docs);docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:incoming.api?.title||"",apiVersion:incoming.api?.version||"",translations:incoming.translations||{},workflow:incoming.workflow||{},team:incoming.team||{}});if(api&&api.paths&&Object.keys(api.paths).length){const currentId=await apiFingerprint(api);if(currentId===id){docs.activeProjectId=id;saveDocs();renderNav();renderEndpoint();toast("M.D imported and activated");}else{saveDocs();toast("M.D imported for another API; load its OpenAPI JSON to activate it");}}else{saveDocs();toast("M.D imported; load its OpenAPI JSON to activate it");}}catch(err){alert("Could not import M.D: "+err.message)}};reader.readAsText(file);e.target.value="";
+}
+/* ============================================================
+   PUBLISH STANDALONE HTML
+   ------------------------------------------------------------
+   Creates a self-contained copy of this page with the current
+   runtime OpenAPI/documentation data embedded into #openapi-data.
+   The published copy opens directly with no Import/password step.
+   Empty `api` is intentionally supported, so a pure documentation
+   shell can also be published.
+   ============================================================ */
+function publishHtml(){
+  if(!requireEditMode())return;
+  try{
+    if(!api || !api.paths || !Object.keys(api.paths).length){
+      throw new Error("Import an OpenAPI / Swagger document before publishing.");
+    }
+    // IMPORTANT: publish the current documentation overlay exactly as it is,
+    // including translations imported from M.D even when no new translation was made.
+    const source=document.documentElement.outerHTML;
+    const embedded=JSON.stringify(api||{}).replace(/</g,"\\u003c");
+    // Publish the canonical docs structure so another browser can restore it
+    // directly, without depending on that browser's localStorage.
+    docs=normalizeDocs(docs);
+    const project=currentProject();
+    const projectId=String(docs.activeProjectId||project.apiFingerprint||"");
+    if(projectId && !docs.projects[projectId]){
+      docs.projects[projectId]=normalizeProject({...project,apiFingerprint:projectId});
+    }
+    const embeddedDocs=JSON.stringify({
+      format:"onyx-api-metadata",
+      version:3,
+      activeProjectId:projectId,
+      projects:projectId?{[projectId]:normalizeProject(project)}:{}
+    }).replace(/</g,"\u003c");
+    const dataPattern=/<script type="application\/json" id="openapi-data">[\s\S]*?<\/script>/;
+    const docsPattern=/<script type="application\/json" id="documentation-data">[\s\S]*?<\/script>/;
+    const scriptClose="</"+"script>";
+    const publishedData=`<script type="application/json" id="openapi-data">${embedded}${scriptClose}`;
+    const publishedDocs=`<script type="application/json" id="documentation-data">${embeddedDocs}${scriptClose}`;
+    if(!dataPattern.test(source))throw new Error("OpenAPI data container was not found.");
+    if(!docsPattern.test(source))throw new Error("Documentation data container was not found.");
+    let html=source.replace(dataPattern,publishedData).replace(docsPattern,publishedDocs);
+    html=html.replace(/<html([^>]*)>/i,(m,attrs)=>`<html${attrs.replace(/\\sdata-published="true"/gi,"")} data-published="true">`);
+    const title=(api.info?.title||"API_Documentation")
+      .replace(/[^a-z0-9._-]+/gi,"_")
+      .replace(/^_+|_+$/g,"")||"API_Documentation";
+    const blob=new Blob(["<!DOCTYPE html>\\n"+html],{type:"text/html;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`${title}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast("Published HTML includes OpenAPI + M.D translations");
+  }catch(err){
+    alert("Could not publish this HTML file: "+err.message);
+  }
+}
+/* ============================================================
+   CLEAR IMPORTED DOCUMENT
+   ------------------------------------------------------------
+   This is deliberately separate from importDocs().
+   It only resets the current runtime document and the saved browser copy.
+   The OpenAPI import/read pipeline itself is not modified.
+   ============================================================ */
+function clearImportedDocs(){
+  if(!requireEditMode())return;
+  if(!confirm("Clear the imported OpenAPI documentation from this browser?"))return;
+  api={};
+  currentPath="";
+  currentMethod="";
+  localStorage.removeItem(API_STORAGE_KEY);
+  updateSpecBadge();
+  renderNav();
+  showOverview();
+  toast("Imported OpenAPI data cleared");
+}
+/* ============================================================
+   IMPORT PIPELINE
+   ------------------------------------------------------------
+   Keep this boundary stable when redesigning the UI.
+   It validates the selected JSON, assigns it to `api`, selects an
+   endpoint, refreshes the specification badge/navigation, and renders.
+   ============================================================ */
+function importDocs(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();reader.onload=async()=>{try{const incoming=JSON.parse(reader.result);if(!incoming.paths || typeof incoming.paths!=="object")throw new Error("This JSON is not a valid OpenAPI document (paths are missing).");if(!incoming.openapi && !incoming.swagger)throw new Error("OpenAPI version is missing. Import an OpenAPI / Swagger JSON document.");api=structuredClone(incoming);saveApi();await activateDocsForApi();const firstPath=Object.keys(api.paths)[0];if(!firstPath)throw new Error("No endpoints were found in paths.");currentPath=firstPath;currentMethod=Object.keys(api.paths[currentPath]).find(x=>["get","post","put","patch","delete"].includes(x))||"get";updateSpecBadge();renderNav();renderEndpoint();toast("OpenAPI / documentation imported")}catch(err){alert("Could not import this JSON file: "+err.message)}};reader.readAsText(file);e.target.value="";
+}
+/* DOCUMENTATION OVERVIEW: generated entirely from imported `api`. */
+function showOverview(){
+  $("topTitle").textContent="API Overview";
+  const eps=allEndpoints();const schemas=Object.keys(api.components?.schemas||{});
+  $("content").innerHTML=`<section class="hero"><div class="eyebrow">Miniplate API</div><h1>${esc(api.info?.title||"API Documentation")}</h1><div class="desc">${esc(api.info?.description||"Normal-readable API documentation for frontend developers.")}</div><div class="meta"><span class="pill">Version ${esc(api.info?.version||"v1")}</span><span class="pill">🔐 Authentication handled by API</span></div></section>
+  <section class="section"><h2>🏗 Documentation Architecture</h2><div class="notice"><b>Two simple layers:</b> <code>api</code> = read-only OpenAPI contract · <code>docs</code> = Arabic documentation and translation metadata. M.D keeps the translation layer portable and independent.</div></section>
+  <section class="section"><h2>📊 Documentation Overview</h2><div class="quick"><div class="quick-card"><div class="n">${eps.length}</div><div class="l">Endpoints</div></div><div class="quick-card"><div class="n">${schemas.length}</div><div class="l">Data Models</div></div><div class="quick-card"><div class="n">${Object.keys(api.paths||{}).length}</div><div class="l">API Paths</div></div><div class="quick-card"><div class="n">JWT</div><div class="l">Authentication</div></div></div></section>
+  <section class="section"><h2>🚀 Controllers</h2><div class="table-wrap"><table><thead><tr><th>Controller</th><th>Endpoint</th><th>Method</th><th>Request Model</th><th>Parameters</th><th>Purpose</th></tr></thead><tbody>${eps.map(e=>{
+    const model=requestModelSummary(e);const endpointId=endpointAnchorId(e.path,e.method);const dtoInfo=requestBodySchemaInfo(e.op);
+    const modelHtml=!model.hasBody?'<span class="muted">—</span>':model.dtos.length?model.dtos.map((dto,i)=>{const dtoId=requestDtoAnchorId(e.path,e.method,dto.name);const name=`${dto.name}${i===0&&dtoInfo.isArray?"[]":""}`;return `<button type="button" class="overview-link" onclick='openEndpointFromOverview(${JSON.stringify(e.path)},${JSON.stringify(e.method)},${JSON.stringify(dtoId)})'><span class="overview-request-model">${esc(name)}</span></button>`;}).join(""):`<button type="button" class="overview-link" onclick='openEndpointFromOverview(${JSON.stringify(e.path)},${JSON.stringify(e.method)},${JSON.stringify(endpointId)})'><span class="overview-request-model">Request Body</span></button>`;
+    const ps=parameterSummary(e);const parametersHtml=!ps.count?'<span class="muted">—</span>':`<button type="button" class="overview-link overview-params-link" title="Open endpoint parameters" onclick='openEndpointFromOverview(${JSON.stringify(e.path)},${JSON.stringify(e.method)},${JSON.stringify(parametersAnchorId(e.path,e.method))})'><span class="overview-param-count">${ps.count} ${ps.count===1?"param":"params"}</span></button>`;
+    return `<tr><td><b>${esc(controllerFor(e))}</b></td><td class="field">${esc(e.path)}</td><td>${methodBadge(e.method)}</td><td>${modelHtml}</td><td>${parametersHtml}</td><td>${esc(e.op.summary||"")}</td></tr>`;
+  }).join("")}</tbody></table></div></section>`;
+}
+/* DATA MODELS VIEW: generated from components.schemas in imported `api`. */
+function showModels(){
+  const schemas=api.components?.schemas||{};
+  $("topTitle").textContent="Data Models";
+  $("content").innerHTML=`<section class="hero"><div class="eyebrow">Reusable API Models</div><h1>Data Models / DTOs</h1><div class="desc">These models are the structures returned by or accepted by the API. Select an endpoint to see the model in context.</div></section>
+  ${Object.entries(schemas).map(([name,s])=>`<section class="section"><div class="section-head"><div><h2>${esc(name)}</h2><div class="muted">${esc(s.description||"Reusable API data model.")}</div></div></div><div class="table-wrap"><table><thead><tr><th>Field Name</th><th>Data Type</th><th>Format</th><th>Nullable</th><th>Max Length</th><th>OpenAPI Description</th><th>Arabic Description</th></tr></thead><tbody>${schemaFields(s).map(f=>`<tr><td class="field">${esc(f.name)}</td><td>${esc(typeName(f.p))}</td><td>${esc(formatOf(f.p))}</td><td>${f.p.nullable?"Yes":"No"}</td><td>${f.p.maxLength??"Not specified"}</td><td>${esc(f.p.description||"")}</td><td dir="rtl">${esc(getFieldDescription(name,f.name,f.p))||'<span class="muted">—</span>'}</td></tr>`).join("")||'<tr><td colspan="7">No properties.</td></tr>'}</tbody></table></div></section>`).join("")}`;
+}
+$("search").addEventListener("input",e=>renderNav(e.target.value));
+const savedApi=loadSavedApi();
+const savedDocs=loadSavedDocs();
+const isPublished=document.documentElement.dataset.published==="true";
+if(isPublished){
+  // A published file is self-contained: embedded OpenAPI + embedded M.D
+  // are authoritative and must not be overwritten by another browser's localStorage.
+  api=structuredClone(ORIGINAL||{});
+  docs=normalizeDocs(EMBEDDED_DOCS||{});
+}else{
+  if(savedApi && savedApi.paths)api=savedApi;
+  docs=savedDocs||normalizeDocs({});
+}
+if(localStorage.getItem("miniplate_theme")==="dark")document.documentElement.dataset.theme="dark";
+editMode=sessionStorage.getItem("onyx_edit_unlocked")==="1" && !!editorToken();updateEditUi();updateSpecBadge();
+(async()=>{
+  if(api&&api.paths&&Object.keys(api.paths).length){
+    if(isPublished){
+      // Embedded documentation is authoritative in a published file.
+      const id=await apiFingerprint(api);
+      if(docs.projects[id])docs.activeProjectId=id;
+    }else{
+      await activateDocsForApi();
+      try{await loadCloudTranslation({preferCloud:true});}catch(err){updateCloudStatus("☁ Offline","err");}
+    }
+  }
+  renderNav();
+  showOverview();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "onyx-api-docs-netlify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "General API Documentation Portal with Netlify Functions and Netlify Blobs translation storage.",
+  "scripts": {
+    "dev": "netlify dev",
+    "check": "node --check netlify/functions/auth.mjs && node --check netlify/functions/translation.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.0.3",
+    "@netlify/functions": "6.0.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "27.5.2"
+  }
+}
