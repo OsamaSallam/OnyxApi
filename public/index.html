@@ -1,4 +1,3 @@
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 <!DOCTYPE html>
 <!--
   General API Doc - IMPORT-DRIVEN HTML TEMPLATE
@@ -341,12 +340,8 @@ function loadSavedDocs(){try{const x=localStorage.getItem(DOCS_STORAGE_KEY);retu
 function apiIdentity(source=api){
   const title=String(source?.info?.title||"").trim();
   const version=String(source?.info?.version||"").trim();
-  if(!title && !version)throw new Error("API title or version is required for translation identity.");
-  return `${title}::${version}`;
-}
-function apiKey(source=api){
-  const raw=apiIdentity(source).toLowerCase();
-  return raw.replace(/[^a-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,120)||"api";
+  if(!title && !version)throw new Error("API title or version is required for cloud sync.");
+  return {title,version};
 }
 function currentProject(){
   docs=normalizeDocs(docs);
@@ -864,12 +859,12 @@ function toggleEditMode(){if(editMode){editMode=false;sessionStorage.removeItem(
 function requireEditMode(){if(editMode)return true;toast("Editing is locked. Unlock Edit Documentation first.");openEditPassword();return false;}
 function updateCloudStatus(text,state=""){const el=$("cloudStatus");if(!el)return;el.textContent=text;el.classList.remove("ok","err");if(state)el.classList.add(state);}
 function editorToken(){return sessionStorage.getItem("onyx_editor_token")||"";}
-function currentProjectIdForCloud(){return apiKey(api);}
 async function cloudRequest(url,options={}){const headers={...(options.headers||{})};const token=editorToken();if(token)headers.Authorization="Bearer "+token;return fetch(url,{...options,headers});}
 async function loadCloudTranslation({preferCloud=true}={}){
   if(!api?.paths||!Object.keys(api.paths).length)return false;
-  const key=apiKey(api);
-  const res=await cloudRequest("/api/translation?apiKey="+encodeURIComponent(key));
+  const identity=apiIdentity(api);
+  const query="title="+encodeURIComponent(identity.title)+"&version="+encodeURIComponent(identity.version);
+  const res=await cloudRequest("/api/translation?"+query);
   if(res.status===404){cloudState={etag:"",loaded:false,saving:false};updateCloudStatus("☁ Not initialized");return false;}
   if(!res.ok){const data=await res.json().catch(()=>({}));throw new Error(data.message||("Cloud load failed ("+res.status+")"));}
   const data=await res.json();
@@ -886,15 +881,16 @@ async function loadCloudTranslation({preferCloud=true}={}){
 }
 async function saveCloudTranslation(){
   if(!editMode||!editorToken()||document.documentElement.dataset.published==="true")return false;
-  let key;try{key=currentProjectIdForCloud();}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
+  let identity;try{identity=apiIdentity(api);}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
   docs=normalizeDocs(docs);
   const project=structuredClone(currentProject());
   project.apiTitle=api.info?.title||project.apiTitle||"";project.apiVersion=api.info?.version||project.apiVersion||"";
   project.cloudVersion=Number(project.cloudVersion||0)+1;project.team=project.team||{};project.team.lastUpdatedAt=new Date().toISOString();project.team.lastUpdatedBy=getTranslatorName();
   cloudState.saving=true;updateCloudStatus("☁ Saving…");
   try{
-    const body=JSON.stringify({apiKey:key,project,etag:cloudState.etag||""});
-    const res=await cloudRequest("/api/translation",{method:"PUT",headers:{"Content-Type":"application/json"},body});
+    const body=JSON.stringify({project,etag:cloudState.etag||""});
+    const query="title="+encodeURIComponent(identity.title)+"&version="+encodeURIComponent(identity.version);
+    const res=await cloudRequest("/api/translation?"+query,{method:"PUT",headers:{"Content-Type":"application/json"},body});
     const data=await res.json().catch(()=>({}));
     if(res.status===409){cloudState.saving=false;updateCloudStatus("☁ Conflict","err");toast("Cloud changed. Reload Cloud before saving again.");return false;}
     if(res.status===401){editMode=false;sessionStorage.removeItem("onyx_edit_unlocked");sessionStorage.removeItem("onyx_editor_token");updateEditUi();throw new Error("Editor session expired. Unlock editing again.");}

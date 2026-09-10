@@ -59,34 +59,32 @@ function normalizeProject(project) {
   return p;
 }
 
-function cleanPart(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120);
+function projectStorageId(title, version) {
+  const value = `${String(title || "").trim()}\n${String(version || "").trim()}`;
+  return Buffer.from(value, 'utf8').toString('base64url').slice(0, 180) || 'api';
 }
 
-function validApiKey(value) {
-  return /^[a-z0-9][a-z0-9._-]{0,119}$/.test(String(value || ''));
+function identityFromRequest(url) {
+  return {
+    title: String(url.searchParams.get('title') || '').trim(),
+    version: String(url.searchParams.get('version') || '').trim(),
+  };
 }
 
-function makeApiKey(title, version) {
-  const key = `${cleanPart(title)}-${cleanPart(version)}`.replace(/-+$/g, '');
-  return key.slice(0, 120) || 'api';
+function validIdentity(identity) {
+  return !!(identity.title || identity.version);
 }
 
 export default async (req) => {
   const url = new URL(req.url);
-  const apiKey = String(url.searchParams.get('apiKey') || '').trim().toLowerCase();
+  const identity = identityFromRequest(url);
 
-  if (!validApiKey(apiKey)) {
-    return json({ message: 'A valid API key is required.' }, 400);
+  if (!validIdentity(identity)) {
+    return json({ message: 'API title or version is required for cloud sync.' }, 400);
   }
 
   const store = getStore(STORE_NAME);
-  const key = `${KEY_PREFIX}${apiKey}/translation.json`;
+  const key = `${KEY_PREFIX}${projectStorageId(identity.title, identity.version)}/translation.json`;
 
   if (req.method === 'GET') {
     const entry = await store.getWithMetadata(key, { consistency: 'strong', type: 'json' });
@@ -112,8 +110,7 @@ export default async (req) => {
       return json({ message: 'API title or version is required.' }, 400);
     }
 
-    const expectedKey = makeApiKey(project.apiTitle, project.apiVersion);
-    if (expectedKey !== apiKey) {
+    if (project.apiTitle !== identity.title || project.apiVersion !== identity.version) {
       return json({ message: 'API identity does not match the cloud project.' }, 409);
     }
 
