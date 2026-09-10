@@ -43,20 +43,11 @@ function verifyToken(token) {
   }
 }
 
-function normalizeFingerprint(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function validFingerprint(value) {
-  return /^[a-f0-9]{64}$/.test(normalizeFingerprint(value));
-}
-
-function normalizeProject(project, apiFingerprint) {
+function normalizeProject(project) {
   const p = project && typeof project === 'object' ? structuredClone(project) : {};
-  p.version = 3;
-  p.apiFingerprint = apiFingerprint;
-  p.apiTitle = String(p.apiTitle || '');
-  p.apiVersion = String(p.apiVersion || '');
+  p.version = 4;
+  p.apiTitle = String(p.apiTitle || '').trim();
+  p.apiVersion = String(p.apiVersion || '').trim();
   p.translations = p.translations && typeof p.translations === 'object' ? p.translations : {};
   p.workflow = p.workflow && typeof p.workflow === 'object' ? p.workflow : {};
   p.team = p.team && typeof p.team === 'object' ? p.team : {};
@@ -68,30 +59,39 @@ function normalizeProject(project, apiFingerprint) {
   return p;
 }
 
+function cleanPart(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
+}
+
+function validApiKey(value) {
+  return /^[a-z0-9][a-z0-9._-]{0,119}$/.test(String(value || ''));
+}
+
+function makeApiKey(title, version) {
+  const key = `${cleanPart(title)}--${cleanPart(version)}`.replace(/-+$/g, '');
+  return key.slice(0, 120) || 'api';
+}
+
 export default async (req) => {
   const url = new URL(req.url);
-  const apiFingerprint = normalizeFingerprint(url.searchParams.get('apiFingerprint'));
+  const apiKey = String(url.searchParams.get('apiKey') || '').trim().toLowerCase();
 
-  if (!validFingerprint(apiFingerprint)) {
-    return json({ message: 'A valid 64-character SHA-256 apiFingerprint is required.' }, 400);
+  if (!validApiKey(apiKey)) {
+    return json({ message: 'A valid API key is required.' }, 400);
   }
 
   const store = getStore(STORE_NAME);
-  const key = `${KEY_PREFIX}${apiFingerprint}/translation.json`;
+  const key = `${KEY_PREFIX}${apiKey}/translation.json`;
 
   if (req.method === 'GET') {
     const entry = await store.getWithMetadata(key, { consistency: 'strong', type: 'json' });
     if (!entry) return json({ exists: false, project: null }, 404);
-
-    const storedFingerprint = normalizeFingerprint(entry.data?.apiFingerprint);
-    if (storedFingerprint !== apiFingerprint) {
-      return json({
-        message: 'Stored cloud translation fingerprint does not match the requested API.',
-        conflict: true
-      }, 409);
-    }
-
-    return json({ exists: true, etag: entry.etag, project: entry.data });
+    return json({ exists: true, etag: entry.etag, project: normalizeProject(entry.data) });
   }
 
   if (req.method === 'PUT') {
@@ -107,16 +107,16 @@ export default async (req) => {
       return json({ message: 'Invalid JSON body.' }, 400);
     }
 
-    if (normalizeFingerprint(body?.apiFingerprint) !== apiFingerprint) {
-      return json({ message: 'API fingerprint mismatch.' }, 409);
+    const project = normalizeProject(body?.project);
+    if (!project.apiTitle && !project.apiVersion) {
+      return json({ message: 'API title or version is required.' }, 400);
     }
 
-    const incomingProjectFingerprint = normalizeFingerprint(body?.project?.apiFingerprint);
-    if (incomingProjectFingerprint && incomingProjectFingerprint !== apiFingerprint) {
-      return json({ message: 'Project API fingerprint mismatch.' }, 409);
+    const expectedKey = makeApiKey(project.apiTitle, project.apiVersion);
+    if (expectedKey !== apiKey) {
+      return json({ message: 'API identity does not match the cloud project.' }, 409);
     }
 
-    const project = normalizeProject(body?.project, apiFingerprint);
     project.team.lastUpdatedBy = user.sub;
     project.team.lastUpdatedAt = new Date().toISOString();
     project.cloudVersion = Number(project.cloudVersion || 0);
@@ -126,12 +126,12 @@ export default async (req) => {
     if (expectedEtag) {
       result = await store.setJSON(key, project, {
         onlyIfMatch: expectedEtag,
-        metadata: { editor: user.sub, apiFingerprint },
+        metadata: { editor: user.sub, apiTitle: project.apiTitle, apiVersion: project.apiVersion },
       });
     } else {
       result = await store.setJSON(key, project, {
         onlyIfNew: true,
-        metadata: { editor: user.sub, apiFingerprint },
+        metadata: { editor: user.sub, apiTitle: project.apiTitle, apiVersion: project.apiVersion },
       });
     }
 

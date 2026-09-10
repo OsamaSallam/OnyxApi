@@ -258,7 +258,7 @@ html[data-published="true"] .admin-control{display:none !important;}
   Real OpenAPI / Swagger JSON is loaded only through Import.
 -->
 <script type="application/json" id="openapi-data">{}</script>
-<script type="application/json" id="documentation-data">{"version":3,"activeProjectId":"","projects":{}}</script>
+<script type="application/json" id="documentation-data">{"format":"onyx-translation","version":1,"api":{"title":"","version":""},"translations":{"parameters":{},"fields":{},"responses":{}},"workflow":{"parameters":{},"fields":{},"responses":{}},"team":{"lastUpdatedAt":"","lastUpdatedBy":""}}</script>
 <script>
 "use strict";
 /* ============================================================
@@ -294,10 +294,10 @@ function esc(v){return String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800);}
 function getTranslatorName(){return String(localStorage.getItem("onyx_translator_name")||sessionStorage.getItem("onyx_editor_name")||"Translator").trim()||"Translator";}
 function setTranslatorName(){const current=getTranslatorName();const value=prompt("Translator name",current);if(value!==null&&value.trim()){localStorage.setItem("onyx_translator_name",value.trim());toast("Translator name saved");showWorkspace();}}
-function emptyProject(){return {version:3,apiFingerprint:"",apiTitle:"",apiVersion:"",translations:{parameters:{},fields:{},responses:{}},workflow:{parameters:{},fields:{},responses:{}},team:{lastUpdatedAt:"",lastUpdatedBy:""}};}
+function emptyProject(){return {version:4,apiTitle:"",apiVersion:"",translations:{parameters:{},fields:{},responses:{}},workflow:{parameters:{},fields:{},responses:{}},team:{lastUpdatedAt:"",lastUpdatedBy:""}};}
 function normalizeProject(value){
-  const p=value&&typeof value==="object"?value:emptyProject();
-  p.version=3;p.apiFingerprint=String(p.apiFingerprint||"");p.apiTitle=String(p.apiTitle||"");p.apiVersion=String(p.apiVersion||"");
+  const p=value&&typeof value==="object"?structuredClone(value):emptyProject();
+  p.version=4;p.apiTitle=String(p.apiTitle||"");p.apiVersion=String(p.apiVersion||"");
   p.translations=p.translations&&typeof p.translations==="object"?p.translations:{};
   p.workflow=p.workflow&&typeof p.workflow==="object"?p.workflow:{};
   p.team=p.team&&typeof p.team==="object"?p.team:{};
@@ -305,32 +305,30 @@ function normalizeProject(value){
     p.translations[b]=p.translations[b]&&typeof p.translations[b]==="object"?p.translations[b]:{};
     p.workflow[b]=p.workflow[b]&&typeof p.workflow[b]==="object"?p.workflow[b]:{};
   }
+  p.cloudVersion=Number(p.cloudVersion||0);
   return p;
 }
 function normalizeDocs(value){
   const d=value&&typeof value==="object"?structuredClone(value):{};
+  // New format: one portable project, identified by API title + version.
+  if(Number(d.version)>=4 && d.project){return {version:4,project:normalizeProject(d.project)};}
+  // Legacy v1 flat metadata.
   if(d.version===1 && d.translations){
-    return {version:3,activeProjectId:"",projects:{__legacy__:normalizeProject({translations:d.translations})}};
+    return {version:4,project:normalizeProject({translations:d.translations})};
   }
-  // Backward compatibility for published v3 files created by older builds.
-  // Older Publish emitted a flat project; convert it to the canonical shape.
+  // Legacy v3 flat metadata containing the old fingerprint. The fingerprint is
+  // intentionally ignored; title/version are the new portable identity.
   if(Number(d.version)===3 && d.translations && !d.projects){
-    const id=String(d.apiFingerprint||"");
-    const project=normalizeProject({
-      apiFingerprint:id,
-      apiTitle:d.api?.title||"",
-      apiVersion:d.api?.version||"",
-      translations:d.translations,
-      workflow:d.workflow,
-      team:d.team
-    });
-    return {version:3,activeProjectId:id,projects:id?{[id]:project}:{__legacy__:project}};
+    return {version:4,project:normalizeProject({apiTitle:d.api?.title||"",apiVersion:d.api?.version||"",translations:d.translations,workflow:d.workflow,team:d.team})};
   }
-  d.version=3;
-  d.projects=d.projects&&typeof d.projects==="object"?d.projects:{};
-  for(const [id,project] of Object.entries(d.projects))d.projects[id]=normalizeProject(project);
-  d.activeProjectId=String(d.activeProjectId||"");
-  return d;
+  // Legacy v3 project map. Prefer the active project when available, otherwise
+  // take the first project that contains data.
+  if(Number(d.version)===3 && d.projects){
+    const values=Object.values(d.projects).filter(Boolean);
+    const old=values.find(x=>x&&x.apiTitle)||values[0]||{};
+    return {version:4,project:normalizeProject({apiTitle:old.apiTitle||"",apiVersion:old.apiVersion||"",translations:old.translations,workflow:old.workflow,team:old.team,cloudVersion:old.cloudVersion})};
+  }
+  return {version:4,project:normalizeProject(d.project||d)};
 }
 function saveApi(){localStorage.setItem(API_STORAGE_KEY,JSON.stringify(api));}
 function saveDocs(){
@@ -340,25 +338,37 @@ function saveDocs(){
 }
 function loadSavedApi(){try{const x=localStorage.getItem(API_STORAGE_KEY)||localStorage.getItem("miniplate_api_docs");return x?JSON.parse(x):null}catch(e){return null}}
 function loadSavedDocs(){try{const x=localStorage.getItem(DOCS_STORAGE_KEY);return x?normalizeDocs(JSON.parse(x)):normalizeDocs({});}catch(e){return normalizeDocs({});}}
-async function sha256Text(value){const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");}
-async function apiFingerprint(source=api){return sha256Text(JSON.stringify(source||{}));}
+function apiIdentity(source=api){
+  const title=String(source?.info?.title||"").trim();
+  const version=String(source?.info?.version||"").trim();
+  if(!title && !version)throw new Error("API title or version is required for translation identity.");
+  return `${title}::${version}`;
+}
+function apiKey(source=api){
+  const raw=apiIdentity(source).toLowerCase();
+  return raw.replace(/[^a-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,120)||"api";
+}
 function currentProject(){
   docs=normalizeDocs(docs);
-  if(docs.activeProjectId && docs.projects[docs.activeProjectId])return docs.projects[docs.activeProjectId];
-  if(docs.projects.__legacy__)return docs.projects.__legacy__;
-  docs.projects[docs.activeProjectId||"__unbound__"]??=normalizeProject({apiFingerprint:docs.activeProjectId||""});
-  return docs.projects[docs.activeProjectId||"__unbound__"];
+  const p=docs.project;
+  p.apiTitle=String(api.info?.title||p.apiTitle||"");
+  p.apiVersion=String(api.info?.version||p.apiVersion||"");
+  return p;
 }
 async function activateDocsForApi({migrateLegacy=true}={}){
   if(!api||!api.paths||!Object.keys(api.paths).length)return;
-  const id=await apiFingerprint(api);docs=normalizeDocs(docs);
-  if(!docs.projects[id]){
-    const legacy=docs.projects.__legacy__;
-    const hasLegacy=legacy && Object.values(legacy.translations||{}).some(x=>x&&Object.keys(x).length);
-    if(migrateLegacy&&hasLegacy){legacy.apiFingerprint=id;legacy.apiTitle=api.info?.title||"";legacy.apiVersion=api.info?.version||"";docs.projects[id]=legacy;delete docs.projects.__legacy__;}
-    else docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:api.info?.title||"",apiVersion:api.info?.version||""});
+  docs=normalizeDocs(docs);
+  const p=docs.project||normalizeProject({});
+  const hasTranslations=Object.values(p.translations||{}).some(x=>x&&Object.keys(x).length);
+  if(!hasTranslations && !migrateLegacy){
+    docs.project=normalizeProject({});
+  }else{
+    docs.project=normalizeProject(p);
   }
-  docs.projects[id].apiFingerprint=id;docs.projects[id].apiTitle=api.info?.title||docs.projects[id].apiTitle||"";docs.projects[id].apiVersion=api.info?.version||docs.projects[id].apiVersion||"";docs.activeProjectId=id;saveDocs();
+  docs.project.apiTitle=api.info?.title||docs.project.apiTitle||"";
+  docs.project.apiVersion=api.info?.version||docs.project.apiVersion||"";
+  docs={version:4,project:docs.project};
+  saveDocs();
 }
 function parameterKey(method,path,param){return `${String(method||"").toUpperCase()}:${path}:${param?.in||"unknown"}:${param?.name||""}`;}
 function fieldKey(schemaName,fieldName){return `${schemaName}:${fieldName}`;}
@@ -854,59 +864,21 @@ function toggleEditMode(){if(editMode){editMode=false;sessionStorage.removeItem(
 function requireEditMode(){if(editMode)return true;toast("Editing is locked. Unlock Edit Documentation first.");openEditPassword();return false;}
 function updateCloudStatus(text,state=""){const el=$("cloudStatus");if(!el)return;el.textContent=text;el.classList.remove("ok","err");if(state)el.classList.add(state);}
 function editorToken(){return sessionStorage.getItem("onyx_editor_token")||"";}
-function isValidApiFingerprint(value){return /^[a-f0-9]{64}$/i.test(String(value||"").trim());}
-async function currentApiFingerprint(){
-  if(!api?.paths||!Object.keys(api.paths).length)throw new Error("Load an OpenAPI / Swagger document first.");
-  const id=String(await apiFingerprint(api)||"").trim().toLowerCase();
-  if(!isValidApiFingerprint(id))throw new Error("Could not create a valid API fingerprint.");
-  return id;
-}
-async function currentProjectIdForCloud(){
-  const id=await currentApiFingerprint();
-  docs=normalizeDocs(docs);
-  const activeId=String(docs.activeProjectId||"").trim().toLowerCase();
-  if(activeId && activeId!==id){
-    throw new Error("The active translation belongs to a different API project. Load/import the matching OpenAPI document before syncing.");
-  }
-  const project=docs.projects[id];
-  if(project && project.apiFingerprint && String(project.apiFingerprint).trim().toLowerCase()!==id){
-    throw new Error("The local translation fingerprint does not match the current API.");
-  }
-  return id;
-}
-async function cloudRequest(url,options={}){
-  const headers={...(options.headers||{})};
-  const token=editorToken();
-  if(token)headers.Authorization="Bearer "+token;
-  return fetch(url,{...options,headers});
-}
+function currentProjectIdForCloud(){return apiKey(api);}
+async function cloudRequest(url,options={}){const headers={...(options.headers||{})};const token=editorToken();if(token)headers.Authorization="Bearer "+token;return fetch(url,{...options,headers});}
 async function loadCloudTranslation({preferCloud=true}={}){
-  if(document.documentElement.dataset.published==="true"){
-    updateCloudStatus("☁ Standalone");
-    return false;
-  }
-  const id=await currentApiFingerprint();
-  const res=await cloudRequest("/api/translation?apiFingerprint="+encodeURIComponent(id));
+  if(!api?.paths||!Object.keys(api.paths).length)return false;
+  const key=apiKey(api);
+  const res=await cloudRequest("/api/translation?apiKey="+encodeURIComponent(key));
   if(res.status===404){cloudState={etag:"",loaded:false,saving:false};updateCloudStatus("☁ Not initialized");return false;}
-  if(!res.ok){
-    const data=await res.json().catch(()=>({}));
-    throw new Error(data.message||("Cloud load failed ("+res.status+")"));
-  }
+  if(!res.ok){const data=await res.json().catch(()=>({}));throw new Error(data.message||("Cloud load failed ("+res.status+")"));}
   const data=await res.json();
   if(!data.project)return false;
-
-  const storedId=String(data.project.apiFingerprint||"").trim().toLowerCase();
-  if(!isValidApiFingerprint(storedId)||storedId!==id){
-    throw new Error("Cloud translation fingerprint does not match the current API. The translation was not loaded.");
-  }
-
+  const expectedTitle=String(api.info?.title||"");const expectedVersion=String(api.info?.version||"");
+  if(String(data.project.apiTitle||"")!==expectedTitle || String(data.project.apiVersion||"")!==expectedVersion){throw new Error("Cloud translation belongs to a different API. Load the matching M.D or OpenAPI document.");}
   if(preferCloud){
-    docs=normalizeDocs(docs);
-    docs.projects[id]=normalizeProject({...data.project,apiFingerprint:id});
-    docs.activeProjectId=id;
-    localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));
-    renderNav();
-    showOverview();
+    docs=normalizeDocs(docs);docs.project=normalizeProject(data.project);localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));
+    renderNav();showOverview();
   }
   cloudState={etag:data.etag||"",loaded:true,saving:false};
   updateCloudStatus("☁ Cloud v"+(data.project.cloudVersion||1),"ok");
@@ -914,81 +886,28 @@ async function loadCloudTranslation({preferCloud=true}={}){
 }
 async function saveCloudTranslation(){
   if(!editMode||!editorToken()||document.documentElement.dataset.published==="true")return false;
-
-  let id;
-  try{id=await currentProjectIdForCloud();}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
-
+  let key;try{key=currentProjectIdForCloud();}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
   docs=normalizeDocs(docs);
-  const existing=docs.projects[id];
-  if(!existing){
-    docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:api.info?.title||"",apiVersion:api.info?.version||""});
-  }
-  if(docs.activeProjectId && String(docs.activeProjectId).trim().toLowerCase()!==id){
-    updateCloudStatus("☁ Error","err");
-    toast("The active translation belongs to another API project.");
-    return false;
-  }
-  docs.activeProjectId=id;
-
-  const project=structuredClone(docs.projects[id]);
-  project.apiFingerprint=id;
-  project.apiTitle=api.info?.title||project.apiTitle||"";
-  project.apiVersion=api.info?.version||project.apiVersion||"";
-  project.cloudVersion=Number(project.cloudVersion||0)+1;
-  project.team=project.team||{};
-  project.team.lastUpdatedAt=new Date().toISOString();
-  project.team.lastUpdatedBy=getTranslatorName();
-
-  cloudState.saving=true;
-  updateCloudStatus("☁ Saving…");
+  const project=structuredClone(currentProject());
+  project.apiTitle=api.info?.title||project.apiTitle||"";project.apiVersion=api.info?.version||project.apiVersion||"";
+  project.cloudVersion=Number(project.cloudVersion||0)+1;project.team=project.team||{};project.team.lastUpdatedAt=new Date().toISOString();project.team.lastUpdatedBy=getTranslatorName();
+  cloudState.saving=true;updateCloudStatus("☁ Saving…");
   try{
-    const body=JSON.stringify({apiFingerprint:id,project,etag:cloudState.etag||""});
+    const body=JSON.stringify({apiKey:key,project,etag:cloudState.etag||""});
     const res=await cloudRequest("/api/translation",{method:"PUT",headers:{"Content-Type":"application/json"},body});
     const data=await res.json().catch(()=>({}));
-    if(res.status===409){
-      cloudState.saving=false;
-      updateCloudStatus("☁ Conflict","err");
-      toast("Cloud changed. Reload Cloud before saving again.");
-      return false;
-    }
-    if(res.status===401){
-      editMode=false;
-      sessionStorage.removeItem("onyx_edit_unlocked");
-      sessionStorage.removeItem("onyx_editor_token");
-      updateEditUi();
-      throw new Error("Editor session expired. Unlock editing again.");
-    }
+    if(res.status===409){cloudState.saving=false;updateCloudStatus("☁ Conflict","err");toast("Cloud changed. Reload Cloud before saving again.");return false;}
+    if(res.status===401){editMode=false;sessionStorage.removeItem("onyx_edit_unlocked");sessionStorage.removeItem("onyx_editor_token");updateEditUi();throw new Error("Editor session expired. Unlock editing again.");}
     if(!res.ok)throw new Error(data.message||"Cloud save failed");
-
-    docs.projects[id]=normalizeProject(project);
-    docs.projects[id].apiFingerprint=id;
-    docs.activeProjectId=id;
-    cloudState={etag:data.etag||cloudState.etag,loaded:true,saving:false};
-    localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));
-    updateCloudStatus("☁ Saved v"+project.cloudVersion,"ok");
-    return true;
-  }catch(err){
-    cloudState.saving=false;
-    updateCloudStatus("☁ Save failed","err");
-    toast(err.message||"Cloud save failed");
-    return false;
-  }
+    docs.project=normalizeProject(project);cloudState={etag:data.etag||cloudState.etag,loaded:true,saving:false};localStorage.setItem(DOCS_STORAGE_KEY,JSON.stringify(docs));updateCloudStatus("☁ Saved v"+project.cloudVersion,"ok");return true;
+  }catch(err){cloudState.saving=false;updateCloudStatus("☁ Save failed","err");toast(err.message||"Cloud save failed");return false;}
 }
 function scheduleCloudSave(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>saveCloudTranslation(),900);}
 async function syncCloudTranslation({preferCloud=true}={}){
   if(document.documentElement.dataset.published==="true"){toast("This published HTML is standalone and does not use cloud sync.");return;}
   if(!api?.paths||!Object.keys(api.paths).length){toast("Load an OpenAPI document first.");return;}
-  try{
-    const found=await loadCloudTranslation({preferCloud});
-    if(!found && editMode){
-      if(!cloudState.etag) await saveCloudTranslation();
-    }else if(found){
-      toast(preferCloud?"Cloud translation loaded":"Cloud checked");
-    }
-  }catch(err){
-    updateCloudStatus("☁ Error","err");
-    toast(err.message||"Cloud sync failed");
-  }
+  try{const found=await loadCloudTranslation({preferCloud});if(!found&&editMode&&!cloudState.etag)await saveCloudTranslation();else if(found)toast(preferCloud?"Cloud translation loaded":"Cloud checked");}
+  catch(err){updateCloudStatus("☁ Error","err");toast(err.message||"Cloud sync failed");}
 }
 function toggleTheme(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==="dark"?"":"dark";localStorage.setItem("miniplate_theme",document.documentElement.dataset.theme||"light")}
 function downloadJson(filename,data){
@@ -1019,49 +938,29 @@ function showWorkspace(){
   const renderQueue=()=>{const q=$("workspaceQueue"),search=($("workspaceSearch").value||"").toLowerCase(),status=$("workspaceStatus").value;const items=collectTranslationItems().filter(x=>(status==="all"||(status==="translated"&&!!getDocText(x.bucket,x.key))||(status==="missing"&&!getDocText(x.bucket,x.key)))&&((x.label+" "+x.location+" "+x.description).toLowerCase().includes(search)));q.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Status</th><th>Type</th><th>Field</th><th>Location</th><th>Arabic</th><th>Action</th></tr></thead><tbody>${items.map(x=>{const translated=!!getDocText(x.bucket,x.key);return `<tr><td>${translated?'<span class="badge yes">Translated</span>':'<span class="badge no">Missing</span>'}</td><td>${esc(x.kind)}</td><td class="field">${esc(x.label)}</td><td>${esc(x.location)}</td><td dir="rtl">${translated?esc(getDocText(x.bucket,x.key)):'—'}</td><td><button class="btn" onclick='openTranslationItem(${JSON.stringify(x.path)},${JSON.stringify(x.method)},${JSON.stringify(x.bucket)},${JSON.stringify(x.key)})'>Open</button></td></tr>`;}).join("")||'<tr><td colspan="6">No translation items match the filter.</td></tr>'}</tbody></table></div>`;};$("workspaceSearch").addEventListener("input",renderQueue);$("workspaceStatus").addEventListener("change",renderQueue);renderQueue();}
 function openTranslationItem(path,method,bucket,key){selectEndpoint(path,method);setTimeout(()=>{if(bucket==="parameters"){$(parametersAnchorId(path,method))?.scrollIntoView({behavior:"smooth",block:"start"});toggleEditor("paramEditor");}else{$("content")?.querySelectorAll(".editor-panel").forEach(x=>x.classList.remove("open"));const text=document.querySelector(`textarea`);if(text)text.focus();}},80);}
 function exportDocs(){downloadJson("openapi.json",api);toast("Raw OpenAPI contract exported");}
-async function exportMetadata(){
+function exportMetadata(){
   try{
-    const id=await currentApiFingerprint();
-    docs=normalizeDocs(docs);
-    const project=docs.projects[id]||normalizeProject({apiFingerprint:id,apiTitle:api.info?.title||"",apiVersion:api.info?.version||""});
-    if(project.apiFingerprint && String(project.apiFingerprint).trim().toLowerCase()!==id)throw new Error("The selected translation belongs to another API project.");
-    downloadJson("api-metadata.json",{format:"onyx-api-metadata",version:3,apiFingerprint:id,api:{title:project.apiTitle||api.info?.title||"",version:project.apiVersion||api.info?.version||""},translations:project.translations,workflow:project.workflow,team:project.team});
+    const project=normalizeProject(currentProject());
+    downloadJson("api-metadata.json",{format:"onyx-translation",version:1,api:{title:project.apiTitle||api.info?.title||"",version:project.apiVersion||api.info?.version||""},translations:project.translations,workflow:project.workflow,team:project.team});
     toast("M.D exported");
   }catch(err){alert("Could not export M.D: "+err.message);}
 }
 function importMetadata(e){
   const file=e.target.files[0];if(!file)return;const reader=new FileReader();
-  reader.onload=async()=>{
-    try{
-      const incoming=JSON.parse(reader.result);
-      if(incoming.format!=="onyx-api-metadata"||![2,3].includes(Number(incoming.version)))throw new Error("Unsupported metadata file. Export a new api-metadata.json from this version.");
-      const id=String(incoming.apiFingerprint||"").trim().toLowerCase();
-      if(!isValidApiFingerprint(id))throw new Error("Metadata contains a missing or invalid API fingerprint.");
-
-      if(api&&api.paths&&Object.keys(api.paths).length){
-        const currentId=await currentApiFingerprint();
-        if(currentId!==id){
-          docs=normalizeDocs(docs);
-          if(docs.projects[id] && String(docs.projects[id].apiFingerprint||"").trim().toLowerCase()!==id)delete docs.projects[id];
-          docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:incoming.api?.title||"",apiVersion:incoming.api?.version||"",translations:incoming.translations||{},workflow:incoming.workflow||{},team:incoming.team||{}});
-          saveDocs();
-          toast("M.D imported for another API; load its matching OpenAPI JSON to activate it");
-          return;
-        }
-      }
-
-      docs=normalizeDocs(docs);
-      docs.projects[id]=normalizeProject({apiFingerprint:id,apiTitle:incoming.api?.title||"",apiVersion:incoming.api?.version||"",translations:incoming.translations||{},workflow:incoming.workflow||{},team:incoming.team||{}});
-      docs.projects[id].apiFingerprint=id;
-      docs.activeProjectId=id;
-      saveDocs();
-      cloudState={etag:"",loaded:false,saving:false};
-      renderNav();
-      renderEndpoint();
-      toast("M.D imported and activated");
-    }catch(err){alert("Could not import M.D: "+err.message)}
-  };
-  reader.readAsText(file);e.target.value="";
+  reader.onload=async()=>{try{
+    const incoming=JSON.parse(reader.result);
+    if(incoming.format!=="onyx-translation" && incoming.format!=="onyx-api-metadata")throw new Error("Unsupported M.D file.");
+    const incomingTitle=String(incoming.api?.title||"").trim(),incomingVersion=String(incoming.api?.version||"").trim();
+    if(!incomingTitle&&!incomingVersion)throw new Error("M.D API title/version is missing.");
+    const project=normalizeProject({apiTitle:incomingTitle,apiVersion:incomingVersion,translations:incoming.translations||{},workflow:incoming.workflow||{},team:incoming.team||{}});
+    docs=normalizeDocs(docs);docs.project=project;saveDocs();
+    if(api&&api.paths&&Object.keys(api.paths).length){
+      const currentTitle=String(api.info?.title||"").trim(),currentVersion=String(api.info?.version||"").trim();
+      if(currentTitle===incomingTitle&&currentVersion===incomingVersion){renderNav();renderEndpoint();toast("M.D imported and activated");}
+      else{toast("M.D imported. Load its matching OpenAPI document to activate it");}
+    }else toast("M.D imported. Load its OpenAPI JSON to activate it");
+  }catch(err){alert("Could not import M.D: "+err.message)}
+  };reader.readAsText(file);e.target.value="";
 }
 /* ============================================================
    PUBLISH STANDALONE HTML
@@ -1072,60 +971,40 @@ function importMetadata(e){
    Empty `api` is intentionally supported, so a pure documentation
    shell can also be published.
    ============================================================ */
-async function publishHtml(){
+function publishHtml(){
   if(!requireEditMode())return;
   try{
     if(!api || !api.paths || !Object.keys(api.paths).length){
       throw new Error("Import an OpenAPI / Swagger document before publishing.");
     }
-
-    // The published HTML is a standalone client copy. It contains the current
-    // OpenAPI contract and the matching M.D translation project, but it never
-    // writes that copy back to Netlify Blobs.
-    const id=await currentApiFingerprint();
-    docs=normalizeDocs(docs);
-    const project=docs.projects[id]||normalizeProject({
-      apiFingerprint:id,
-      apiTitle:api.info?.title||"",
-      apiVersion:api.info?.version||""
-    });
-
-    if(project.apiFingerprint && String(project.apiFingerprint).trim().toLowerCase()!==id){
-      throw new Error("The selected translation belongs to another API project. Publishing was cancelled.");
-    }
-
-    project.apiFingerprint=id;
-    project.apiTitle=api.info?.title||project.apiTitle||"";
-    project.apiVersion=api.info?.version||project.apiVersion||"";
-    docs.projects[id]=normalizeProject(project);
-    docs.activeProjectId=id;
-
+    // IMPORTANT: publish the current documentation overlay exactly as it is,
+    // including translations imported from M.D even when no new translation was made.
     const source=document.documentElement.outerHTML;
     const embedded=JSON.stringify(api||{}).replace(/</g,"\\u003c");
+    // Publish the portable M.D structure. No fingerprint or project id is embedded.
+    docs=normalizeDocs(docs);
+    const project=currentProject();
     const embeddedDocs=JSON.stringify({
-      format:"onyx-api-metadata",
-      version:3,
-      activeProjectId:id,
-      projects:{[id]:normalizeProject(project)}
-    }).replace(/</g,"\\u003c");
-
+      format:"onyx-translation",
+      version:1,
+      api:{title:project.apiTitle||api.info?.title||"",version:project.apiVersion||api.info?.version||""},
+      translations:project.translations,
+      workflow:project.workflow,
+      team:project.team
+    }).replace(/</g,"\u003c");
     const dataPattern=/<script type="application\/json" id="openapi-data">[\s\S]*?<\/script>/;
     const docsPattern=/<script type="application\/json" id="documentation-data">[\s\S]*?<\/script>/;
     const scriptClose="</"+"script>";
     const publishedData=`<script type="application/json" id="openapi-data">${embedded}${scriptClose}`;
     const publishedDocs=`<script type="application/json" id="documentation-data">${embeddedDocs}${scriptClose}`;
-
     if(!dataPattern.test(source))throw new Error("OpenAPI data container was not found.");
     if(!docsPattern.test(source))throw new Error("Documentation data container was not found.");
-
     let html=source.replace(dataPattern,publishedData).replace(docsPattern,publishedDocs);
-    html=html.replace(/<html([^>]*)>/i,(m,attrs)=>`<html${attrs.replace(/\sdata-published="true"/gi,"")} data-published="true">`);
-
+    html=html.replace(/<html([^>]*)>/i,(m,attrs)=>`<html${attrs.replace(/\\sdata-published="true"/gi,"")} data-published="true">`);
     const title=(api.info?.title||"API_Documentation")
       .replace(/[^a-z0-9._-]+/gi,"_")
       .replace(/^_+|_+$/g,"")||"API_Documentation";
-
-    const blob=new Blob(["<!DOCTYPE html>\n"+html],{type:"text/html;charset=utf-8"});
+    const blob=new Blob(["<!DOCTYPE html>\\n"+html],{type:"text/html;charset=utf-8"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
@@ -1208,9 +1087,9 @@ editMode=sessionStorage.getItem("onyx_edit_unlocked")==="1" && !!editorToken();u
 (async()=>{
   if(api&&api.paths&&Object.keys(api.paths).length){
     if(isPublished){
-      // Embedded documentation is authoritative in a published file.
-      const id=await apiFingerprint(api);
-      if(docs.projects[id])docs.activeProjectId=id;
+      docs=normalizeDocs(docs);
+      docs.project.apiTitle=api.info?.title||docs.project.apiTitle||"";
+      docs.project.apiVersion=api.info?.version||docs.project.apiVersion||"";
     }else{
       await activateDocsForApi();
       try{await loadCloudTranslation({preferCloud:true});}catch(err){updateCloudStatus("☁ Offline","err");}
