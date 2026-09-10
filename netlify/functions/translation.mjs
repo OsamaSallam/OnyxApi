@@ -73,7 +73,7 @@ function validApiKey(value) {
 }
 
 function makeApiKey(title, version) {
-  const key = `${cleanPart(title)}--${cleanPart(version)}`.replace(/-+$/g, '');
+  const key = `${cleanPart(title)}-${cleanPart(version)}`.replace(/-+$/g, '');
   return key.slice(0, 120) || 'api';
 }
 
