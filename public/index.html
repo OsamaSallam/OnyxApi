@@ -134,9 +134,6 @@ a{color:var(--blue)}
 .method.delete{background:var(--method-delete)}
 .path{font-family:Consolas,Monaco,monospace;font-size:var(--path-font-size);font-weight:750;word-break:break-all}
 .copy-small{border:1px solid var(--line);background:var(--surface2);color:var(--text);padding:6px 9px;border-radius:7px}
-.import-btn{background:#ffd9a8!important;border-color:#f2b66d!important;color:#6b3b00!important}
-.table-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-.table-copy-btn{white-space:nowrap}
 .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.pill{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:5px 10px;font-size:12px}
 .flow{display:grid;grid-template-columns:1fr 35px 1fr 35px 1fr;gap:8px;align-items:center;margin-top:22px}
 .flow-node{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:13px;text-align:center;font-weight:800}
@@ -189,6 +186,10 @@ tr:last-child td{border-bottom:0}tbody tr:hover{background:var(--surface2)}
 /* ======================= END CSS LAYER ===================== */
 /* Published HTML: keep the delivered page read-only and hide editor actions. */
 html[data-published="true"] .admin-control{display:none !important;}
+
+.import-btn{background:#ffd9a8;border-color:#f2b66d;color:#5a3512;}
+.table-tools{display:flex;gap:8px;align-items:center;margin:8px 0 10px;}
+.table-copy-btn{font-size:12px;padding:5px 9px;background:#f3f4f6;border:1px solid #d1d5db;color:#374151;}
 </style>
 </head>
 <body>
@@ -220,9 +221,9 @@ html[data-published="true"] .admin-control{display:none !important;}
   <div class="top-actions">
     <button class="btn" title="Toggle light / dark theme" aria-label="Toggle theme" onclick="toggleTheme()">◐</button>
     <button class="btn admin-control" title="Export the raw OpenAPI contract" onclick="exportDocs()">⇩ Exp</button>
-    <button class="btn admin-control" title="Export documentation metadata / Arabic translations" onclick="exportMetadata()">⇩ Exp</button>
+    <button class="btn admin-control" title="Export documentation metadata / Arabic translations" onclick="exportMetadata()">⇩ M.D</button>
     <button class="btn admin-control import-btn" title="Import an OpenAPI / Swagger JSON file" onclick="if(requireEditMode())document.getElementById('importFile').click()">⇧ Imp</button>
-    <button class="btn admin-control import-btn" title="Import documentation metadata / Arabic translations" onclick="if(requireEditMode())document.getElementById('metadataFile').click()">⇧ Imp</button>
+    <button class="btn admin-control import-btn" title="Import documentation metadata / Arabic translations" onclick="if(requireEditMode())document.getElementById('metadataFile').click()">⇧ M.D</button>
     <button class="btn danger admin-control" title="Clear the currently loaded API" onclick="clearImportedDocs()">Del</button>
     <button class="btn admin-control" title="Open translation workspace and progress dashboard" aria-label="Translation workspace" onclick="showWorkspace()">👥</button>
     <button class="btn primary admin-control" title="Unlock and edit documentation" onclick="toggleEditMode()">✎ <span id="editLabel">Edit Doc</span></button>
@@ -343,12 +344,8 @@ function loadSavedDocs(){try{const x=localStorage.getItem(DOCS_STORAGE_KEY);retu
 function apiIdentity(source=api){
   const title=String(source?.info?.title||"").trim();
   const version=String(source?.info?.version||"").trim();
-  if(!title && !version)throw new Error("API title or version is required for translation identity.");
-  return `${title}::${version}`;
-}
-function apiKey(source=api){
-  const raw=apiIdentity(source).toLowerCase();
-  return raw.replace(/[^a-z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,120)||"api";
+  if(!title && !version)throw new Error("API title or version is required for cloud sync.");
+  return {title,version};
 }
 function currentProject(){
   docs=normalizeDocs(docs);
@@ -641,11 +638,8 @@ function renderEndpoint(){
           : detailRelation}
         <div class="muted dto-note">${dto.schema.description ? esc(dto.schema.description) : parentText}${idx===0&&request.info.contentType?` · Content-Type: ${esc(request.info.contentType)}`:""}</div>
       </div>
-      <div class="table-tools">
-        <button class="btn primary admin-control" onclick="toggleEditor('requestEditor-${idx}')">✎ Edit</button>
-        <button class="btn table-copy-btn" onclick="copyTableToClipboard('requestTable-${idx}')">▣ Copy</button>
-      </div>
     </div>
+    <div class="table-tools"><button class="btn primary admin-control" onclick="toggleEditor('requestEditor-${idx}')">✎ Edit</button><button class="btn table-copy-btn" onclick="copyTableToClipboard('requestTable-${idx}')">▣ Copy</button></div>
     <div class="table-wrap"><table id="requestTable-${idx}"><thead><tr>
       <th>Field Name</th><th>Data Type</th><th>Format</th><th>Nullable</th><th>Required</th><th>Max Length</th><th>Min</th><th>Max</th><th>OpenAPI Description</th><th>Arabic Description</th>
     </tr></thead><tbody>${rows||'<tr><td colspan="10">No properties were resolved for this DTO.</td></tr>'}</tbody></table></div>`;
@@ -703,8 +697,9 @@ function renderEndpoint(){
   <section id="${parametersAnchorId(currentPath,currentMethod)}" class="section">
     <div class="section-head">
       <div><h2>🔎 Parameters</h2><div class="muted">Query, path, and header parameters defined by the endpoint. This table is independent from the request-body DTO fields.</div></div>
-      <div class="table-tools"><button class="btn primary admin-control" onclick="toggleEditor('paramEditor')">✎ Edit</button><button class="btn table-copy-btn" onclick="copyTableToClipboard('parametersTable')">▣ Copy</button></div>
+      <button class="btn primary" onclick="toggleEditor('paramEditor')">✎ Edit / Add Rows</button>
     </div>
+    <div class="table-tools"><button class="btn table-copy-btn" onclick="copyTableToClipboard('parametersTable')">▣ Copy</button></div>
     <div class="table-wrap"><table id="parametersTable"><thead><tr>
       <th>Field Name</th><th>Location</th><th>Data Type</th><th>Format</th><th>Required</th><th>Max Length</th><th>Min</th><th>Max</th><th>Allowed Values</th><th>Default</th><th>OpenAPI Description</th><th>Arabic Description</th>
     </tr></thead><tbody>${paramRows}</tbody></table></div>
@@ -731,8 +726,9 @@ function renderEndpoint(){
   <section class="section">
     <div class="section-head">
       <div><h2>🧩 Response Fields</h2><div class="muted">Metadata for every field the frontend receives.</div></div>
-      <div class="table-tools"><button class="btn primary admin-control" onclick="toggleEditor('responseEditor')">✎ Edit</button><button class="btn table-copy-btn" onclick="copyTableToClipboard('responseTable')">▣ Copy</button></div>
+      <button class="btn primary" onclick="toggleEditor('responseEditor')">✎ Edit / Add Rows</button>
     </div>
+    <div class="table-tools"><button class="btn table-copy-btn" onclick="copyTableToClipboard('responseTable')">▣ Copy</button></div>
     <div class="table-wrap"><table id="responseTable"><thead><tr>
       <th>Field Name</th><th>Data Type</th><th>Format</th><th>Required</th><th>Nullable</th><th>Max Length</th><th>Default</th><th>OpenAPI Description</th><th>Arabic Description</th>
     </tr></thead><tbody>${respRows||'<tr><td colspan="9">No response fields were resolved.</td></tr>'}</tbody></table></div>
@@ -840,27 +836,20 @@ function fetchExample(){
 });
 const data = await response.json();`;
 }
-async function copyTableToClipboard(id){
-  const table=document.getElementById(id);if(!table){toast("Table not found");return;}
-  const clone=table.cloneNode(true);
-  clone.querySelectorAll("button,.table-tools,.action-cell").forEach(el=>el.remove());
-  const rows=[...clone.querySelectorAll("tr")];
-  const tsv=rows.map(row=>[...row.children].map(cell=>(cell.innerText||cell.textContent||"").replace(/\s+/g," ").trim()).join("\t")).join("\n");
-  const html=clone.outerHTML;
-  try{
-    if(navigator.clipboard?.write && window.ClipboardItem){
-      await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([tsv],{type:"text/plain"})})]);
-    }else if(navigator.clipboard?.writeText){
-      await navigator.clipboard.writeText(tsv);
-    }else{throw new Error("Clipboard API unavailable");}
-    toast("Table copied — paste into Word or Excel");
-  }catch(err){
-    const ta=document.createElement("textarea");ta.value=tsv;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();
-    try{document.execCommand("copy");toast("Table copied — paste into Word or Excel");}catch(e){toast("Copy failed. Select the table manually.");}finally{ta.remove();}
-  }
-}
 function copyText(text){navigator.clipboard?.writeText(text).then(()=>toast("Copied to clipboard")).catch(()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();toast("Copied to clipboard")})}
 function copyElement(id){copyText($(id).innerText.replace(/^Copy(?: JSON)?\\s*/,""))}
+function copyTableToClipboard(id){
+  const table=document.getElementById(id);
+  if(!table){toast("Table not found");return;}
+  const clone=table.cloneNode(true);
+  clone.querySelectorAll("button,.table-tools,.action-cell").forEach(el=>el.remove());
+  const rows=[...clone.rows];
+  const tsv=rows.map(r=>[...r.cells].map(c=>c.innerText.replace(/\s+/g," ").trim()).join("\t")).join("\n");
+  const html=clone.outerHTML;
+  if(navigator.clipboard?.write && window.ClipboardItem){
+    navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([tsv],{type:"text/plain"})})]).then(()=>toast("Table copied — paste into Word or Excel")).catch(()=>copyText(tsv));
+  }else copyText(tsv);
+}
 function updateSpecBadge(){const version=api.info?.version||"v1";$("specVersionBadge").textContent=version;const raw=String(api.openapi||"");const oas=raw?raw.replace(/^(\d+\.\d+)(?:\.\d+)?$/,"$1"):"3.0";$("specOasBadge").textContent=`OAS ${oas}`;}
 function updateEditUi(){$("editLabel").textContent=editMode?"Editing":"Edit Doc";}
 /* ============================================================
@@ -889,12 +878,12 @@ function toggleEditMode(){if(editMode){editMode=false;sessionStorage.removeItem(
 function requireEditMode(){if(editMode)return true;toast("Editing is locked. Unlock Edit Documentation first.");openEditPassword();return false;}
 function updateCloudStatus(text,state=""){const el=$("cloudStatus");if(!el)return;el.textContent=text;el.classList.remove("ok","err");if(state)el.classList.add(state);}
 function editorToken(){return sessionStorage.getItem("onyx_editor_token")||"";}
-function currentProjectIdForCloud(){return apiKey(api);}
 async function cloudRequest(url,options={}){const headers={...(options.headers||{})};const token=editorToken();if(token)headers.Authorization="Bearer "+token;return fetch(url,{...options,headers});}
 async function loadCloudTranslation({preferCloud=true}={}){
   if(!api?.paths||!Object.keys(api.paths).length)return false;
-  const key=apiKey(api);
-  const res=await cloudRequest("/api/translation?apiKey="+encodeURIComponent(key));
+  const identity=apiIdentity(api);
+  const query="title="+encodeURIComponent(identity.title)+"&version="+encodeURIComponent(identity.version);
+  const res=await cloudRequest("/api/translation?"+query);
   if(res.status===404){cloudState={etag:"",loaded:false,saving:false};updateCloudStatus("☁ Not initialized");return false;}
   if(!res.ok){const data=await res.json().catch(()=>({}));throw new Error(data.message||("Cloud load failed ("+res.status+")"));}
   const data=await res.json();
@@ -911,15 +900,16 @@ async function loadCloudTranslation({preferCloud=true}={}){
 }
 async function saveCloudTranslation(){
   if(!editMode||!editorToken()||document.documentElement.dataset.published==="true")return false;
-  let key;try{key=currentProjectIdForCloud();}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
+  let identity;try{identity=apiIdentity(api);}catch(err){updateCloudStatus("☁ Error","err");toast(err.message);return false;}
   docs=normalizeDocs(docs);
   const project=structuredClone(currentProject());
   project.apiTitle=api.info?.title||project.apiTitle||"";project.apiVersion=api.info?.version||project.apiVersion||"";
   project.cloudVersion=Number(project.cloudVersion||0)+1;project.team=project.team||{};project.team.lastUpdatedAt=new Date().toISOString();project.team.lastUpdatedBy=getTranslatorName();
   cloudState.saving=true;updateCloudStatus("☁ Saving…");
   try{
-    const body=JSON.stringify({apiKey:key,project,etag:cloudState.etag||""});
-    const res=await cloudRequest("/api/translation",{method:"PUT",headers:{"Content-Type":"application/json"},body});
+    const body=JSON.stringify({project,etag:cloudState.etag||""});
+    const query="title="+encodeURIComponent(identity.title)+"&version="+encodeURIComponent(identity.version);
+    const res=await cloudRequest("/api/translation?"+query,{method:"PUT",headers:{"Content-Type":"application/json"},body});
     const data=await res.json().catch(()=>({}));
     if(res.status===409){cloudState.saving=false;updateCloudStatus("☁ Conflict","err");toast("Cloud changed. Reload Cloud before saving again.");return false;}
     if(res.status===401){editMode=false;sessionStorage.removeItem("onyx_edit_unlocked");sessionStorage.removeItem("onyx_editor_token");updateEditUi();throw new Error("Editor session expired. Unlock editing again.");}
@@ -1088,31 +1078,11 @@ function showOverview(){
   }).join("")}</tbody></table></div></section>`;
 }
 /* DATA MODELS VIEW: generated from components.schemas in imported `api`. */
-function schemaEditorRows(name,schema){
-  return schemaFields(schema).map((f,i)=>{
-    const arabic=getFieldDescription(name,f.name,f.p);
-    return `<tr data-i="${i}"><td><span class="field">${esc(f.name)}</span></td><td>${esc(typeName(f.p))}</td><td>${esc(f.p.description||"")}</td><td><textarea data-k="arabic" dir="rtl" placeholder="اكتب الوصف العربي...">${esc(arabic)}</textarea></td><td class="action-cell"><button class="icon-btn" title="Clear translation" onclick="clearSchemaTranslation(${JSON.stringify(name)},${JSON.stringify(f.name)})">↺</button></td></tr>`;
-  }).join("");
-}
-function saveSchemaEditor(name,editorId){
-  if(!requireEditMode())return;
-  const schema=api.components?.schemas?.[name];if(!schema)return;
-  const fields=schemaFields(schema);
-  [...document.querySelectorAll(`#${editorId} tbody tr`)].forEach((r,i)=>{
-    const f=fields[i],g=k=>r.querySelector(`[data-k="${k}"]`);
-    if(f&&g("arabic"))setDocText("fields",fieldKey(name,f.name),g("arabic").value);
-  });
-  saveDocs();toast("Arabic model documentation saved");showModels();
-}
-function clearSchemaTranslation(name,fieldName){
-  if(!requireEditMode())return;
-  setDocText("fields",fieldKey(name,fieldName),"");saveDocs();showModels();
-}
 function showModels(){
   const schemas=api.components?.schemas||{};
   $("topTitle").textContent="Data Models";
   $("content").innerHTML=`<section class="hero"><div class="eyebrow">Reusable API Models</div><h1>Data Models / DTOs</h1><div class="desc">These models are the structures returned by or accepted by the API. Select an endpoint to see the model in context.</div></section>
-  ${Object.entries(schemas).map(([name,s],idx)=>{const tableId=`modelTable-${idx}`,editorId=`schemaEditor-${idx}`;return `<section class="section"><div class="section-head"><div><h2>${esc(name)}</h2><div class="muted">${esc(s.description||"Reusable API data model.")}</div></div><div class="table-tools"><button class="btn primary admin-control" onclick='toggleEditor(${JSON.stringify(editorId)})'>✎ Edit</button><button class="btn table-copy-btn" onclick="copyTableToClipboard('${tableId}')">▣ Copy</button></div></div><div class="table-wrap"><table id="${tableId}"><thead><tr><th>Field Name</th><th>Data Type</th><th>Format</th><th>Nullable</th><th>Max Length</th><th>OpenAPI Description</th><th>Arabic Description</th></tr></thead><tbody>${schemaFields(s).map(f=>`<tr><td class="field">${esc(f.name)}</td><td>${esc(typeName(f.p))}</td><td>${esc(formatOf(f.p))}</td><td>${f.p.nullable?"Yes":"No"}</td><td>${f.p.maxLength??"Not specified"}</td><td>${esc(f.p.description||"")}</td><td dir="rtl">${esc(getFieldDescription(name,f.name,f.p))||'<span class="muted">—</span>'}</td></tr>`).join("")||'<tr><td colspan="7">No properties.</td></tr>'}</tbody></table></div><div class="editor-panel" id="${editorId}"><div class="editor-note">Edit only the Arabic documentation overlay. The raw OpenAPI model remains read-only.</div><div class="table-wrap"><table class="edit-table"><thead><tr><th>Field</th><th>Type</th><th>OpenAPI Description</th><th>Arabic Description</th><th>Action</th></tr></thead><tbody>${schemaEditorRows(name,s)}</tbody></table></div><div class="editor-actions"><button class="btn primary" onclick='saveSchemaEditor(${JSON.stringify(name)},${JSON.stringify(editorId)})'>Save Arabic Documentation</button></div></div></section>`;}).join("")}`;
+  ${Object.entries(schemas).map(([name,s])=>`<section class="section"><div class="section-head"><div><h2>${esc(name)}</h2><div class="muted">${esc(s.description||"Reusable API data model.")}</div></div></div><div class="table-wrap"><table><thead><tr><th>Field Name</th><th>Data Type</th><th>Format</th><th>Nullable</th><th>Max Length</th><th>OpenAPI Description</th><th>Arabic Description</th></tr></thead><tbody>${schemaFields(s).map(f=>`<tr><td class="field">${esc(f.name)}</td><td>${esc(typeName(f.p))}</td><td>${esc(formatOf(f.p))}</td><td>${f.p.nullable?"Yes":"No"}</td><td>${f.p.maxLength??"Not specified"}</td><td>${esc(f.p.description||"")}</td><td dir="rtl">${esc(getFieldDescription(name,f.name,f.p))||'<span class="muted">—</span>'}</td></tr>`).join("")||'<tr><td colspan="7">No properties.</td></tr>'}</tbody></table></div></section>`).join("")}`;
 }
 $("search").addEventListener("input",e=>renderNav(e.target.value));
 const savedApi=loadSavedApi();
